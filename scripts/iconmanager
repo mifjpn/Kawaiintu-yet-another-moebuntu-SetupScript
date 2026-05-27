@@ -8,6 +8,9 @@ TEMP_DIR="Kawaiintu.temp"
 ICON_URL="https://raw.githubusercontent.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/main/icons/KawaiintuIcon.tar.xz"
 ICON_ARCHIVE="KawaiintuIcon.tar.xz"
 
+# 【追加】実行ユーザーを正しく判定する（SUDO_USERが空なら$USERを使う）
+TARGET_USER="${SUDO_USER:-$USER}"
+
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m          Kawaiintu Icon Manager         \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
@@ -22,7 +25,6 @@ if [ "$COMMAND" = "install" ]; then
     echo ">> Extracting icons..."
     tar -Jxf "$TEMP_DIR/$ICON_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
 
-    # 【重要】展開されたフォルダ名を動的に取得する（テーマと同じ手法）
     ICON_DIR_NAME=$(ls -d "$TEMP_DIR"/*/ 2>/dev/null | head -n 1 | xargs basename)
 
     if [ -z "$ICON_DIR_NAME" ]; then
@@ -35,9 +37,9 @@ if [ "$COMMAND" = "install" ]; then
     sudo cp -R "$TEMP_DIR/$ICON_DIR_NAME" /usr/share/icons/
 
     echo ">> Setting icon theme to $ICON_DIR_NAME..."
-    # ユーザー権限でGNOMEの設定を書き換える
-    sudo -u "$SUDO_USER" dconf write /org/gnome/desktop/interface/icon-theme "'$ICON_DIR_NAME'" 2>/dev/null || \
-    sudo -u "$SUDO_USER" gsettings set org.gnome.desktop.interface icon-theme "$ICON_DIR_NAME"
+    # 【修正】判定したTARGET_USERで設定を適用する
+    sudo -u "$TARGET_USER" dconf write /org/gnome/desktop/interface/icon-theme "'$ICON_DIR_NAME'" 2>/dev/null || \
+    sudo -u "$TARGET_USER" gsettings set org.gnome.desktop.interface icon-theme "$ICON_DIR_NAME"
 
     echo ">> Installation complete."
 
@@ -46,8 +48,9 @@ if [ "$COMMAND" = "install" ]; then
 
 elif [ "$COMMAND" = "remove" ]; then
     echo ">> Restoring default Ubuntu icons (Yaru)..."
-    sudo -u "$SUDO_USER" dconf write /org/gnome/desktop/interface/icon-theme "'Yaru'" 2>/dev/null || \
-    sudo -u "$SUDO_USER" gsettings set org.gnome.desktop.interface icon-theme "Yaru"
+    # 【修正】判定したTARGET_USERで設定を適用する
+    sudo -u "$TARGET_USER" dconf write /org/gnome/desktop/interface/icon-theme "'Yaru'" 2>/dev/null || \
+    sudo -u "$TARGET_USER" gsettings set org.gnome.desktop.interface icon-theme "Yaru"
 
     echo ">> Removing Kawaiintu icons from system..."
     sudo rm -rf /usr/share/icons/Kawaiintu* /usr/share/icons/kawaiintu*
