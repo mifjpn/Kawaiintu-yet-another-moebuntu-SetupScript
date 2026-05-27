@@ -12,7 +12,7 @@ COL_RESET="\x1b[39;49;00m"
 
 # ====== BASE URL & VERSION ======
 # リポジトリのRawファイルのベースURLとバージョン変数
-BASE_URL="https://github.com/mifjpn/Kawaiintu/raw/main"
+BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 VER="2604"
 
 # ====== theme urls ======
