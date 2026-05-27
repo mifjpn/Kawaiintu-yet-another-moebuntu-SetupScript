@@ -1,0 +1,142 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Wallpaper Manager
+
+# ==== Variables ====
+# 実際のGitHubリポジトリとファイル名に修正
+BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main/themes"
+EXAMPLE_WALL_ARCHIVE="background.jpg"
+EXAMPLE_WALL_URL="${BASE_URL}/${EXAMPLE_WALL_ARCHIVE}"
+
+SYS_WALL_DIR="/usr/share/backgrounds"
+DEFAULT_WALL_FILENAME="warty-final-ubuntu.png"
+TEMP_DIR="Kawaiintu.wall.temp"
+DEST_FILENAME_BASE="kawaiintu_wall"
+
+ACTION="$1"
+
+# Ask Y/N function
+askyn() {
+  while read -r -n 1 -s answer; do
+    if [[ $answer = [YyNn] ]]; then
+      [[ $answer = [Yy] ]] && retval=0
+      [[ $answer = [Nn] ]] && retval=1
+      break
+    fi
+  done
+  echo ""
+  return $retval
+}
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m       Kawaiintu Wallpaper Manager       \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+if [ "$ACTION" = "install" ]; then
+  # 1. 依存関係のチェック
+  if ! dpkg -s curl >/dev/null 2>&1; then
+    echo ">> Installing curl..."
+    sudo apt update >/dev/null 2>&1
+    sudo apt install -y curl >/dev/null 2>&1
+  fi
+  if ! command -v convert >/dev/null 2>&1; then
+    echo ">> Installing imagemagick..."
+    sudo apt update >/dev/null 2>&1
+    sudo apt install -y imagemagick >/dev/null 2>&1
+  fi
+
+  mkdir -p "$TEMP_DIR"
+
+  # 2. ユーザー対話：画像のD&D
+  echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
+  echo " Please drag-and-drop an image file here and press Enter."
+  echo " (If you just press Enter, the Kawaiintu example wallpaper will be used)"
+  echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
+  read -p "File drop > " FileDrop
+  
+  if [ -z "$FileDrop" ]; then
+    # 空Enterの場合：デフォルトのサンプル画像をダウンロード
+    echo -n ">> Do you want to apply the Kawaiintu example wallpaper? (Y/N): "
+    if ! askyn; then
+      echo ">> Canceled."
+      rm -rf "$TEMP_DIR"
+      echo -n "Hit Any Key to return to menu: "
+      read -r -n 1 -s answer
+      echo ""
+      exit 0
+    fi
+    
+    echo ">> Downloading example wallpaper..."
+    curl -L "$EXAMPLE_WALL_URL" --output "$TEMP_DIR/$EXAMPLE_WALL_ARCHIVE" >/dev/null 2>&1
+    
+    TARGET_EXT="jpg"
+    DEST_PATH="$SYS_WALL_DIR/${DEST_FILENAME_BASE}.${TARGET_EXT}"
+    sudo cp "$TEMP_DIR/$EXAMPLE_WALL_ARCHIVE" "$DEST_PATH"
+    
+  else
+    # ファイルがD&Dされた場合
+    WallFileFullPath=$(echo "$FileDrop" | tr -d \')
+    
+    if [ ! -f "$WallFileFullPath" ]; then
+      echo ">> Error: File not found ($WallFileFullPath)"
+      rm -rf "$TEMP_DIR"
+      echo -n "Hit Any Key to return to menu: "
+      read -r -n 1 -s answer
+      echo ""
+      exit 0
+    fi
+    
+    # 拡張子の判定と変換
+    FileExtension="${WallFileFullPath##*.}"
+    # 小文字化して比較
+    FileExtensionLower=$(echo "$FileExtension" | tr '[:upper:]' '[:lower:]')
+    
+    if [ "$FileExtensionLower" = "jpg" ] || [ "$FileExtensionLower" = "jpeg" ] || [ "$FileExtensionLower" = "png" ]; then
+      TARGET_EXT="$FileExtensionLower"
+      DEST_PATH="$SYS_WALL_DIR/${DEST_FILENAME_BASE}.${TARGET_EXT}"
+      echo ">> Copying image to system directory..."
+      sudo cp "$WallFileFullPath" "$DEST_PATH"
+    else
+      echo ">> Not a standard JPG/PNG. Converting to PNG..."
+      TARGET_EXT="png"
+      DEST_PATH="$SYS_WALL_DIR/${DEST_FILENAME_BASE}.${TARGET_EXT}"
+      
+      if ! convert "$WallFileFullPath" "$TEMP_DIR/${DEST_FILENAME_BASE}.png"; then
+         echo ">> Error: Failed to convert image."
+         rm -rf "$TEMP_DIR"
+         exit 0
+      fi
+      sudo cp "$TEMP_DIR/${DEST_FILENAME_BASE}.png" "$DEST_PATH"
+    fi
+  fi
+
+  # 3. GNOMEへ壁紙を適用（ライト/ダーク両対応）
+  echo ">> Setting background image..."
+  gsettings set org.gnome.desktop.background picture-uri "file://$DEST_PATH"
+  gsettings set org.gnome.desktop.background picture-uri-dark "file://$DEST_PATH"
+  
+  echo ">> Wallpaper successfully applied."
+
+elif [ "$ACTION" = "remove" ]; then
+  # 削除処理（デフォルトに戻す）
+  echo ">> Restoring default Ubuntu wallpaper..."
+  gsettings set org.gnome.desktop.background picture-uri "file://$SYS_WALL_DIR/$DEFAULT_WALL_FILENAME"
+  gsettings set org.gnome.desktop.background picture-uri-dark "file://$SYS_WALL_DIR/$DEFAULT_WALL_FILENAME"
+  
+  echo ">> Removing custom wallpapers from system..."
+  sudo rm -f "$SYS_WALL_DIR/${DEST_FILENAME_BASE}."*
+  
+  echo ">> Restore complete."
+
+else
+  echo ">> Usage: $0 {install|remove}"
+fi
+
+# 4. クリーンアップ
+if [ -d "$TEMP_DIR" ]; then
+  rm -rf "$TEMP_DIR"
+fi
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

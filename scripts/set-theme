@@ -1,0 +1,92 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Set System Theme Wrapper
+
+THEME_URL="$1"
+
+if [ -z "$THEME_URL" ]; then
+  echo ">> Error: No Theme URL provided."
+  exit 1
+fi
+
+THEME_ARCHIVE=$(basename "$THEME_URL")
+TEMP_DIR="Kawaiintu.theme.temp"
+
+# Ask Y/N function
+askyn() {
+  while read -r -n 1 -s answer; do
+    if [[ $answer = [YyNn] ]]; then
+      [[ $answer = [Yy] ]] && retval=0
+      [[ $answer = [Nn] ]] && retval=1
+      break
+    fi
+  done
+  echo ""
+  return $retval
+}
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m       Installing Kawaiintu Theme        \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+mkdir -p "$TEMP_DIR"
+
+# 1. テーマのダウンロードと解凍
+echo ">> Downloading $THEME_ARCHIVE..."
+curl -L "$THEME_URL" --output "$TEMP_DIR/$THEME_ARCHIVE" >/dev/null 2>&1
+
+echo ">> Extracting theme..."
+tar -Jxf "$TEMP_DIR/$THEME_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
+
+THEME_DIR_NAME=$(ls -d "$TEMP_DIR"/*/ | head -n 1 | xargs basename)
+SYSTEM_THEME_PATH="/usr/share/themes/$THEME_DIR_NAME"
+
+# 2. システムのテーマディレクトリへ配置
+echo ">> Copying to system theme directory..."
+sudo cp -R "$TEMP_DIR/$THEME_DIR_NAME" /usr/share/themes/
+
+# 3. install.sh の実行
+echo ">> Executing theme installation script (Administrator privileges required)..."
+if [ -f "${SYSTEM_THEME_PATH}/install.sh" ]; then
+  sudo bash "${SYSTEM_THEME_PATH}/install.sh"
+else
+  echo ">> Error: install.sh not found."
+  rm -rf "$TEMP_DIR"
+  exit 1
+fi
+
+# 4. GDM（ログイン）背景画像の変更
+echo ""
+echo -n ">> Would you like to change the GDM login screen background? (Y/N): "
+if askyn; then
+  echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
+  echo " Please drag-and-drop a login background image here and press Enter."
+  echo " (If you just press Enter, we will ask if you want a solid dark color)"
+  echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
+  read -p "File drop > " FileDrop
+
+  if [ -n "$FileDrop" ]; then
+    LoginFile=$(echo "$FileDrop" | tr -d \')
+    if [ -f "$LoginFile" ]; then
+      if [ -f "${SYSTEM_THEME_PATH}/bg_change.sh" ]; then
+        sudo bash "${SYSTEM_THEME_PATH}/bg_change.sh" "$LoginFile"
+      fi
+    else
+      echo ">> Error: File not found!"
+    fi
+  else
+    echo -n ">> No file provided. Do you want to set the background to solid dark gray (#222222)? (Y/N): "
+    if askyn; then
+      if [ -f "${SYSTEM_THEME_PATH}/bg_change.sh" ]; then
+        sudo bash "${SYSTEM_THEME_PATH}/bg_change.sh"
+      fi
+    else
+      echo ">> Canceled. Preserving default background."
+    fi
+  fi
+fi
+
+rm -rf "$TEMP_DIR"
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

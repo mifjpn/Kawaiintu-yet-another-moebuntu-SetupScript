@@ -1,0 +1,70 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Set Plymouth Wrapper
+
+# ==== Variables ====
+BASE_URL="https://github.com/mifjpn/Kawaiintu/raw/main"
+PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
+PLYMOUTH_URL="${BASE_URL}/themes/${PLYMOUTH_ARCHIVE}"
+TEMP_DIR="Kawaiintu.plymouth.temp"
+EXTRACT_PATH="$TEMP_DIR/kawaii_plymouth/kawaiintu_plymouth"
+
+# Ask Y/N function
+askyn() {
+  while read -r -n 1 -s answer; do
+    if [[ $answer = [YyNn] ]]; then
+      [[ $answer = [Yy] ]] && retval=0
+      [[ $answer = [Nn] ]] && retval=1
+      break
+    fi
+  done
+  echo "" # 改行
+  return $retval
+}
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m    Installing Kawaiintu Plymouth Theme  \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. アーカイブのダウンロードと解凍
+echo ">> Creating temporary directory ($TEMP_DIR)..."
+mkdir -p "$TEMP_DIR"
+
+echo ">> Downloading Plymouth archive..."
+curl -L "$PLYMOUTH_URL" --output "$TEMP_DIR/$PLYMOUTH_ARCHIVE" >/dev/null 2>&1
+
+echo ">> Extracting archive..."
+tar -Jxf "$TEMP_DIR/$PLYMOUTH_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
+
+# 2. ベーステーマのインストール（install.sh）
+echo ">> Executing base installation (Administrator privileges required)..."
+echo "   (This may take a minute as it updates initramfs)"
+sudo bash "$EXTRACT_PATH/install.sh"
+
+# 3. ユーザー対話：背景画像の変更
+echo ""
+echo -n ">> Would you like to set a custom background image? (Y/N): "
+if askyn; then
+    echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
+    echo " Please drag-and-drop an image file here and press Enter."
+    echo " (If you just press Enter without dropping a file, the background will be set to DEFAULT BLACK)"
+    echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
+    read -p "File drop > " FileDrop
+    
+    # ターミナルがドラッグ＆ドロップ時に付与するシングルクォートを取り除く
+    CleanFileDrop=$(echo "$FileDrop" | tr -d \')
+    
+    echo ">> Applying background setting..."
+    # bg_change.sh にファイルパス（空ならそのまま空）を渡して丸投げする
+    sudo bash "$EXTRACT_PATH/bg_change.sh" "$CleanFileDrop"
+else
+    echo ">> Keeping the default black background."
+fi
+
+# 4. クリーンアップ
+echo ">> Cleaning up temporary files..."
+rm -rf "$TEMP_DIR"
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

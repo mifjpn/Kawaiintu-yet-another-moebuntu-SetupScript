@@ -1,0 +1,29 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Add Nemo
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m         Installing Nemo                 \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. aptでのインストール
+echo ">> Update apt and install nemo..."
+sudo apt update >/dev/null 2>&1
+sudo apt -y install nemo
+
+# 2. Dock（お気に入り）への追加
+echo ">> Adding nemo to dock as favorite..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+
+# Nemoがすでに登録されていない場合のみ追加処理を行う
+if [[ "$FAVORITES" != *"'nemo.desktop'"* ]]; then
+  NEW_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop',/'org.gnome.Nautilus.desktop', 'nemo.desktop',/g")
+  gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+  echo ">> Done."
+else
+  echo ">> Nemo is already in your favorites."
+fi
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

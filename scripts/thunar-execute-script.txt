@@ -1,0 +1,12 @@
+<action>
+    <icon>utilities-terminal</icon>
+    <name>端末で実行 (Kawaiintu)</name>
+    <submenu></submenu>
+    <unique-id>kawaiintu-execute-terminal</unique-id>
+    <command>/usr/bin/gnome-terminal -- %f</command>
+    <description>Execute script in terminal</description>
+    <range></range>
+    <patterns>*</patterns>
+    <startup-notify/>
+    <other-files/>
+</action>

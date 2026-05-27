@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Kawaiintu Login Sound
+GenericName=Login Sound
+Comment=Plays the Kawaiintu custom login sound on startup
+Exec=/usr/bin/canberra-gtk-play --id="desktop-login" --description="GNOME Login"
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true

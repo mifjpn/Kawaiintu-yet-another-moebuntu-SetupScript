@@ -1,0 +1,74 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Icon Manager
+
+# ==== Variables ====
+BASE_URL="https://github.com/mifjpn/Kawaiintu/raw/main"
+# アイコンは長期利用を前提とするためバージョン番号を含めない
+ICON_ARCHIVE="KawaiintuIcon.tar.xz"
+ICON_URL="${BASE_URL}/icons/${ICON_ARCHIVE}"
+
+# アーカイブを展開した後のフォルダ名（兼 テーマ名）
+ICON_THEME_NAME="KawaiintuIcon"
+SYS_ICON_DIR="/usr/share/icons"
+DEFAULT_ICON_NAME="Yaru"
+TEMP_DIR="Kawaiintu.temp"
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m         Kawaiintu Icon Manager          \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# Install curl if missing
+InstallCurl() {
+  if ! dpkg -s curl >/dev/null 2>&1; then
+    echo ">> Installing curl..."
+    sudo apt update >/dev/null 2>&1
+    sudo apt install -y curl >/dev/null 2>&1
+  fi
+}
+
+ACTION="$1"
+
+if [ "$ACTION" = "install" ]; then
+  InstallCurl
+  
+  echo ">> Creating temporary directory ($TEMP_DIR)..."
+  mkdir -p "$TEMP_DIR"
+  
+  echo ">> Downloading $ICON_ARCHIVE..."
+  curl -L "$ICON_URL" --output "$TEMP_DIR/$ICON_ARCHIVE"
+  
+  echo ">> Extracting icons..."
+  tar -Jxf "$TEMP_DIR/$ICON_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
+  
+  echo ">> Copying to $SYS_ICON_DIR..."
+  # 展開されたフォルダをシステムディレクトリへコピー
+  sudo cp -R "$TEMP_DIR/$ICON_THEME_NAME" "$SYS_ICON_DIR"
+  
+  echo ">> Setting icon theme to $ICON_THEME_NAME..."
+  gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME_NAME"
+  echo ">> Installation complete."
+
+elif [ "$ACTION" = "remove" ]; then
+  echo ">> Restoring default icon theme ($DEFAULT_ICON_NAME)..."
+  gsettings set org.gnome.desktop.interface icon-theme "$DEFAULT_ICON_NAME"
+  
+  if [ -d "$SYS_ICON_DIR/$ICON_THEME_NAME" ]; then
+    echo ">> Removing $ICON_THEME_NAME from system..."
+    sudo rm -rf "$SYS_ICON_DIR/$ICON_THEME_NAME"
+  fi
+  echo ">> Removal complete."
+
+else
+  echo ">> Usage: $0 {install|remove}"
+fi
+
+# Cleanup
+if [ -d "$TEMP_DIR" ]; then
+  echo ">> Cleaning up temporary files..."
+  rm -rf "$TEMP_DIR"
+fi
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

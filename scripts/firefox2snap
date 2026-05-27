@@ -1,0 +1,49 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Firefox Deb to Snap Converter
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m    Converting Firefox from Deb to Snap  \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. Dock（お気に入り）からの削除
+echo ">> Removing Firefox from dock..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+FAVORITES=$(echo "$FAVORITES" | sed -e "s/'firefox.desktop', //g" -e "s/'firefox_firefox.desktop', //g" -e "s/'firefox.desktop'//g" -e "s/'firefox_firefox.desktop'//g")
+gsettings set org.gnome.shell favorite-apps "$FAVORITES"
+
+# 2. APT Preferences（優先度設定）の削除
+echo ">> Removing APT preferences for Deb Firefox..."
+# 新スクリプトで作成した設定ファイルと、旧仕様のファイルの両方を確実に削除
+sudo rm -f /etc/apt/preferences.d/99mozillateamppa
+sudo rm -f /etc/apt/preferences.d/mozillateamppa
+
+# 3. Deb版の削除
+echo ">> Removing Deb version of Firefox..."
+sudo apt remove -y --autoremove firefox >/dev/null 2>&1
+
+# 4. Mozilla Team PPAの削除
+echo ">> Removing Mozilla Team PPA..."
+sudo add-apt-repository --remove -y ppa:mozillateam/ppa >/dev/null 2>&1
+sudo apt update >/dev/null 2>&1
+
+# 5. Snap版のインストール
+echo ">> Installing Snap version of Firefox..."
+sudo snap install firefox
+
+# 6. Dock（お気に入り）の先頭への追加
+echo ">> Adding Snap Firefox to dock..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+if [[ "$FAVORITES" != *"'firefox_firefox.desktop'"* ]]; then
+  # 空の場合とそうでない場合でカンマの処理を分ける安全な処理
+  if [ "$FAVORITES" = "[]" ]; then
+    NEW_FAVORITES="['firefox_firefox.desktop']"
+  else
+    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/\[/['firefox_firefox.desktop', /")
+  fi
+  gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+fi
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

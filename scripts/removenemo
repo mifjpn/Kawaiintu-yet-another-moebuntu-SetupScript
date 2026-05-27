@@ -1,0 +1,23 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Remove Nemo
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m              Removing Nemo              \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. Dock（お気に入り）からの削除
+echo ">> Removing Nemo from dock..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
+gsettings set org.gnome.shell favorite-apps "$FAVORITES"
+
+# 2. Nemoの完全削除（パージ）と不要パッケージの自動削除
+echo ">> Purging Nemo and cleaning up dependencies..."
+sudo apt purge -y nemo >/dev/null 2>&1
+sudo apt autoremove -y >/dev/null 2>&1
+
+echo ">> Nemo has been successfully removed."
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

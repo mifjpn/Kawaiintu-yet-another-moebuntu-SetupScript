@@ -1,0 +1,32 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Restore Default Plymouth Wrapper
+
+# ==== Variables ====
+BASE_URL="https://github.com/mifjpn/Kawaiintu/raw/main"
+PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
+PLYMOUTH_URL="${BASE_URL}/themes/${PLYMOUTH_ARCHIVE}"
+TEMP_DIR="Kawaiintu.plymouth.temp"
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m    Restoring Default Plymouth Theme     \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+echo ">> Creating temporary directory ($TEMP_DIR)..."
+mkdir -p "$TEMP_DIR"
+
+echo ">> Downloading Plymouth archive..."
+curl -L "$PLYMOUTH_URL" --output "$TEMP_DIR/$PLYMOUTH_ARCHIVE" >/dev/null 2>&1
+
+echo ">> Extracting archive..."
+tar -Jxf "$TEMP_DIR/$PLYMOUTH_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
+
+echo ">> Executing uninstall.sh (Administrator privileges required)..."
+sudo bash "$TEMP_DIR/kawaii_plymouth/kawaiintu_plymouth/uninstall.sh"
+
+echo ">> Cleaning up temporary files..."
+rm -rf "$TEMP_DIR"
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

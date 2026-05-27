@@ -1,0 +1,22 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Remove Custom Sounds
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m  Removing Custom Sounds & Restoring     \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. サウンドテーマの設定をデフォルト(Yaru)に戻す
+echo ">> Restoring default sound theme (Yaru)..."
+gsettings set org.gnome.desktop.sound theme-name "Yaru"
+
+# 2. システムディレクトリからカスタムサウンドを削除
+echo ">> Removing custom sound files from system..."
+# 過去のMoeSoundの残骸と、将来のKawaiintuSoundの両方を確実に削除できるよう指定
+sudo rm -rf /usr/share/sounds/Moe* /usr/share/sounds/Kawaiintu* >/dev/null 2>&1
+
+echo ">> Sound settings restored successfully."
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""
+exit 0

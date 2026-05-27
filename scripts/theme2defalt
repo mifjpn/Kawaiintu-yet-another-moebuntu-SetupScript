@@ -1,0 +1,69 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Restore Default System Theme
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m    Restoring Default Ubuntu Theme       \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+askyn() {
+  while read -r -n 1 -s answer; do
+    if [[ $answer = [YyNn] ]]; then
+      [[ $answer = [Yy] ]] && retval=0
+      [[ $answer = [Nn] ]] && retval=1
+      break
+    fi
+  done
+  echo ""
+  return $retval
+}
+
+echo -n ">> Are you sure you want to restore the default (Yaru) theme? (Y/N): "
+if ! askyn; then
+  echo ">> Canceled."
+  echo ""
+  echo -n "Hit Any Key to return to menu: "
+  read -r -n 1 -s answer
+  echo ""
+  exit 0
+fi
+
+# 1. 最後にインストールされたテーマの uninstall.sh を探して実行
+echo ">> Searching for Kawaiintu uninstaller..."
+UNINSTALLER_FOUND=0
+# 存在するテーマの中から一つを見つけてアンインストールスクリプトを叩く
+for t in /usr/share/themes/Kawaiintu-* /usr/share/themes/kawaiintu-*; do
+  if [ -f "$t/uninstall.sh" ]; then
+    sudo bash "$t/uninstall.sh"
+    UNINSTALLER_FOUND=1
+    break
+  fi
+done
+
+# もしKawaiintuのアンインストーラーが見つからなかった場合のフォールバック（旧Moe仕様からの復旧）
+if [ $UNINSTALLER_FOUND -eq 0 ]; then
+  echo ">> Kawaiintu uninstaller not found. Applying fallback reset..."
+  gsettings set org.gnome.desktop.interface gtk-theme "Yaru"
+  gsettings set org.gnome.desktop.interface color-scheme "default"
+  gsettings set org.gnome.shell.extensions.user-theme name "Yaru"
+  sudo update-alternatives --set gdm-theme.gresource /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource >/dev/null 2>&1 || sudo update-alternatives --auto gdm-theme.gresource
+fi
+
+# 2. テーマディレクトリ自体の削除確認
+echo ""
+echo -n ">> Do you want to permanently DELETE all installed Kawaiintu and Moe theme files? (Y/N): "
+if askyn; then
+  echo ">> Removing theme files..."
+  for t in /usr/share/themes/Moe-* /usr/share/themes/Kawaiintu-* /usr/share/themes/kawaiintu-*; do
+    if [ -d "$t" ]; then
+      sudo rm -rf "$t"
+    fi
+  done
+  echo ">> Theme files deleted."
+else
+  echo ">> Theme files kept on system."
+fi
+
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""
