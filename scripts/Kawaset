@@ -32,6 +32,24 @@ Soundmaid_iori="${BASE_URL}/sound/Moesound_maid_iori.tar.gz"
 SoundSF_iori="${BASE_URL}/sound/Moesound_SF_iori.tar.gz"
 SoundMGd="${BASE_URL}/sound/Moesound_MGd.tar.gz"
 
+# ====== Firefox Titlebar Auto-Config ======
+fix_firefox_titlebar() {
+    echo -e "${COL_CYAN}[*] Configuring Firefox titlebar for Kawaiintu...${COL_RESET}"
+    REAL_USER=${SUDO_USER:-$USER}
+    USER_HOME=$(eval echo ~$REAL_USER)
+    
+    # DEB版とSnap版両方のプロファイルを検索
+    for profile in "$USER_HOME/.mozilla/firefox/"*.default* "$USER_HOME/snap/firefox/common/.mozilla/firefox/"*.default*; do
+        if [ -d "$profile" ]; then
+            if [ -f "$profile/user.js" ]; then
+                sed -i '/browser.tabs.inTitlebar/d' "$profile/user.js"
+            fi
+            echo 'user_pref("browser.tabs.inTitlebar", 0);' >> "$profile/user.js"
+            chown "$REAL_USER:$REAL_USER" "$profile/user.js"
+        fi
+    done
+}
+
 menu() {
 clear
 echo -e $COL_GREEN" ------------------------------------------------------------------------------"
@@ -79,38 +97,47 @@ do
     ;;
     "set theme Pink")
       /bin/bash ./set-theme $ThemePink ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Blue")
       /bin/bash ./set-theme $ThemeBlue ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Cyan")
       /bin/bash ./set-theme $ThemeCyan ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Green")
       /bin/bash ./set-theme $ThemeGreen ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Lime")
       /bin/bash ./set-theme $ThemeLime ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Orange")
       /bin/bash ./set-theme $ThemeOrange ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Purple")
       /bin/bash ./set-theme $ThemePurple ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Red")
       /bin/bash ./set-theme $ThemeRed ;
+      fix_firefox_titlebar ;
       break
     ;;
     "set theme Rose")
       /bin/bash ./set-theme $ThemeRose ;
+      fix_firefox_titlebar ;
       break
     ;;
     "remove Kawaiintu-theme")
@@ -143,10 +170,12 @@ do
     ;;
     "firefox to deb package")
       /bin/bash ./firefox2deb ;
+      fix_firefox_titlebar ;
       break
     ;;
     "firefox to snap package")
       /bin/bash ./firefox2snap ;
+      fix_firefox_titlebar ;
       break
     ;;
     "add nemo")
