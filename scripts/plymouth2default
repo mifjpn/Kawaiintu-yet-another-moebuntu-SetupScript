@@ -2,7 +2,8 @@
 # Kawaiintu Setup Helper - Restore Default Plymouth Wrapper
 
 # ==== Variables ====
-BASE_URL="https://github.com/mifjpn/Kawaiintu/raw/main"
+# 正しいリポジトリURLに修正
+BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
 PLYMOUTH_URL="${BASE_URL}/themes/${PLYMOUTH_ARCHIVE}"
 TEMP_DIR="Kawaiintu.plymouth.temp"
@@ -21,7 +22,14 @@ echo ">> Extracting archive..."
 tar -Jxf "$TEMP_DIR/$PLYMOUTH_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
 
 echo ">> Executing uninstall.sh (Administrator privileges required)..."
-sudo bash "$TEMP_DIR/kawaii_plymouth/kawaiintu_plymouth/uninstall.sh"
+# findコマンドでuninstall.shを動的に探して実行する
+UNINSTALL_SCRIPT=$(find "$TEMP_DIR" -name "uninstall.sh" | head -n 1)
+
+if [ -f "$UNINSTALL_SCRIPT" ]; then
+    sudo bash "$UNINSTALL_SCRIPT"
+else
+    echo ">> Error: uninstall.sh not found."
+fi
 
 echo ">> Cleaning up temporary files..."
 rm -rf "$TEMP_DIR"

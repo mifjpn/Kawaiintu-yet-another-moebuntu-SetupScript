@@ -2,11 +2,11 @@
 # Kawaiintu Setup Helper - Set Plymouth Wrapper
 
 # ==== Variables ====
-BASE_URL="https://github.com/mifjpn/Kawaiintu/raw/main"
+# 正しいリポジトリURLに修正
+BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
 PLYMOUTH_URL="${BASE_URL}/themes/${PLYMOUTH_ARCHIVE}"
 TEMP_DIR="Kawaiintu.plymouth.temp"
-EXTRACT_PATH="$TEMP_DIR/kawaii_plymouth/kawaiintu_plymouth"
 
 # Ask Y/N function
 askyn() {
@@ -35,10 +35,20 @@ curl -L "$PLYMOUTH_URL" --output "$TEMP_DIR/$PLYMOUTH_ARCHIVE" >/dev/null 2>&1
 echo ">> Extracting archive..."
 tar -Jxf "$TEMP_DIR/$PLYMOUTH_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
 
+# findコマンドでinstall.shとディレクトリを動的に探す
+INSTALL_SCRIPT=$(find "$TEMP_DIR" -name "install.sh" | head -n 1)
+EXTRACT_PATH=$(dirname "$INSTALL_SCRIPT")
+
+if [ -z "$INSTALL_SCRIPT" ]; then
+    echo ">> Error: install.sh not found."
+    rm -rf "$TEMP_DIR"
+    exit 1
+fi
+
 # 2. ベーステーマのインストール（install.sh）
 echo ">> Executing base installation (Administrator privileges required)..."
 echo "   (This may take a minute as it updates initramfs)"
-sudo bash "$EXTRACT_PATH/install.sh"
+sudo bash "$INSTALL_SCRIPT"
 
 # 3. ユーザー対話：背景画像の変更
 echo ""
@@ -55,7 +65,11 @@ if askyn; then
     
     echo ">> Applying background setting..."
     # bg_change.sh にファイルパス（空ならそのまま空）を渡して丸投げする
-    sudo bash "$EXTRACT_PATH/bg_change.sh" "$CleanFileDrop"
+    if [ -f "$EXTRACT_PATH/bg_change.sh" ]; then
+        sudo bash "$EXTRACT_PATH/bg_change.sh" "$CleanFileDrop"
+    else
+        echo ">> Error: bg_change.sh not found."
+    fi
 else
     echo ">> Keeping the default black background."
 fi
