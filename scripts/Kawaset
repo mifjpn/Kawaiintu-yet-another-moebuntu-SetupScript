@@ -16,15 +16,15 @@ BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOrigin
 VER="2604"
 
 # ====== theme urls ======
-ThemePink="${BASE_URL}/themes/Kawaiintu-Pink${VER}.tar.xz"
-ThemeBlue="${BASE_URL}/themes/Kawaiintu-Blue${VER}.tar.xz"
-ThemeCyan="${BASE_URL}/themes/Kawaiintu-Cyan${VER}.tar.xz"
-ThemeGreen="${BASE_URL}/themes/Kawaiintu-Green${VER}.tar.xz"
-ThemeLime="${BASE_URL}/themes/Kawaiintu-Lime${VER}.tar.xz"
-ThemeOrange="${BASE_URL}/themes/Kawaiintu-Orange${VER}.tar.xz"
-ThemePurple="${BASE_URL}/themes/Kawaiintu-Purple${VER}.tar.xz"
-ThemeRed="${BASE_URL}/themes/Kawaiintu-Red${VER}.tar.xz"
-ThemeRose="${BASE_URL}/themes/Kawaiintu-Rose${VER}.tar.xz"
+ThemePink="${BASE_URL}/themes/kawaiintu-pink${VER}.tar.xz"
+ThemeBlue="${BASE_URL}/themes/kawaiintu-blue${VER}.tar.xz"
+ThemeCyan="${BASE_URL}/themes/kawaiintu-cyan${VER}.tar.xz"
+ThemeGreen="${BASE_URL}/themes/kawaiintu-green${VER}.tar.xz"
+ThemeLime="${BASE_URL}/themes/kawaiintu-lime${VER}.tar.xz"
+ThemeOrange="${BASE_URL}/themes/kawaiintu-orange${VER}.tar.xz"
+ThemePurple="${BASE_URL}/themes/kawaiintu-purple${VER}.tar.xz"
+ThemeRed="${BASE_URL}/themes/kawaiintu-red${VER}.tar.xz"
+ThemeRose="${BASE_URL}/themes/kawaiintu-rose${VER}.tar.xz"
 
 # ====== Sound URL ======
 Soundiori="${BASE_URL}/sound/Moesound_iori.tar.gz"
