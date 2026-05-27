@@ -56,7 +56,8 @@ fi
 
 # 4. GDM（ログイン）背景画像の変更
 echo ""
-echo -n ">> Would you like to change the GDM login screen background? (Y/N): "
+echo ">> The theme's default kawaii background has been applied."
+echo -n ">> Would you like to change the GDM login screen from the default background? (Y/N): "
 if askyn; then
   echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
   echo " Please drag-and-drop a login background image here and press Enter."
