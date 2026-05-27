@@ -26,9 +26,6 @@ ThemePurple="${BASE_URL}/themes/Kawaiintu-Purple${VER}.tar.xz"
 ThemeRed="${BASE_URL}/themes/Kawaiintu-Red${VER}.tar.xz"
 ThemeRose="${BASE_URL}/themes/Kawaiintu-Rose${VER}.tar.xz"
 
-# ====== login default picture URL ======
-LoginDefaltPicture="${BASE_URL}/themes/background.jpg"
-
 # ====== Sound URL ======
 Soundiori="${BASE_URL}/sound/Moesound_iori.tar.gz"
 Soundmaid_iori="${BASE_URL}/sound/Moesound_maid_iori.tar.gz"
@@ -77,128 +74,128 @@ select opt in "${options[@]}"
 do
   case $opt in
     "base setting(Do first!)")
-      /bin/bash install-GSM;
+      /bin/bash ./install-GSM;
       break
     ;;
     "set theme Pink")
-      /bin/bash set-theme $ThemePink $LoginDefaltPicture ;
+      /bin/bash ./set-theme $ThemePink ;
       break
     ;;
     "set theme Blue")
-      /bin/bash set-theme $ThemeBlue $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeBlue ;
       break
     ;;
     "set theme Cyan")
-      /bin/bash set-theme $ThemeCyan $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeCyan ;
       break
     ;;
     "set theme Green")
-      /bin/bash set-theme $ThemeGreen $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeGreen ;
       break
     ;;
     "set theme Lime")
-      /bin/bash set-theme $ThemeLime $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeLime ;
       break
     ;;
     "set theme Orange")
-      /bin/bash set-theme $ThemeOrange $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeOrange ;
       break
     ;;
     "set theme Purple")
-      /bin/bash set-theme $ThemePurple $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemePurple ;
       break
     ;;
     "set theme Red")
-      /bin/bash set-theme $ThemeRed $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeRed ;
       break
     ;;
     "set theme Rose")
-      /bin/bash set-theme $ThemeRose $LoginDefaltPicture;
+      /bin/bash ./set-theme $ThemeRose ;
       break
     ;;
     "remove Kawaiintu-theme")
-      /bin/bash theme2defalt ;
+      /bin/bash ./theme2defalt ;
       break
     ;;
     "set Kawaiintu-Icons")
-      /bin/bash iconmanager install ;
+      /bin/bash ./iconmanager install ;
       break
     ;;
     "remove Kawaiintu-Icons")
-      /bin/bash iconmanager remove ;
+      /bin/bash ./iconmanager remove ;
       break
     ;;
     "set Kawaiintu-spinner plymouth")
-      /bin/bash set-plymouth ;
+      /bin/bash ./set-plymouth ;
       break
     ;;
     "remove Kawaiintu-spinner plymouth")
-      /bin/bash plymouth2default ;
+      /bin/bash ./plymouth2default ;
       break
     ;;
     "set Kawaiintu Wallpaper")
-      /bin/bash wallmanager install ;
+      /bin/bash ./wallmanager install ;
       break
     ;;
     "remove Kawaiintu Wallpaper")
-      /bin/bash wallmanager remove ;
+      /bin/bash ./wallmanager remove ;
       break
     ;;
     "firefox to deb package")
-      /bin/bash firefox2deb ;
+      /bin/bash ./firefox2deb ;
       break
     ;;
     "firefox to snap package")
-      /bin/bash firefox2snap ;
+      /bin/bash ./firefox2snap ;
       break
     ;;
     "add nemo")
-      /bin/bash addnemo;
+      /bin/bash ./addnemo;
       break
     ;;
     "remove nemo")
-      /bin/bash removenemo ;
+      /bin/bash ./removenemo ;
       break
     ;;
     "add thunar")
-      /bin/bash addthunar;
+      /bin/bash ./addthunar;
       break
     ;;
     "remove thunar")
-      /bin/bash removethunar ;
+      /bin/bash ./removethunar ;
       break
     ;;
     "add vlc(deb)")
-      /bin/bash addvlc;
+      /bin/bash ./addvlc;
       break
     ;;
     "remove vlc(deb)")
-      /bin/bash removevlc ;
+      /bin/bash ./removevlc ;
       break
     ;;
     "set Moesound_iori")
-      /bin/bash setsound $Soundiori ;
-      /bin/bash loginsound install ;
+      /bin/bash ./setsound $Soundiori ;
+      /bin/bash ./loginsound install ;
       break
     ;;
     "set Moesound_maid_iori")
-      /bin/bash setsound $Soundmaid_iori ;
-      /bin/bash loginsound install ;
+      /bin/bash ./setsound $Soundmaid_iori ;
+      /bin/bash ./loginsound install ;
       break
     ;;
     "set Moesound_SF_iori")
-      /bin/bash setsound $SoundSF_iori ;
-      /bin/bash loginsound install ;
+      /bin/bash ./setsound $SoundSF_iori ;
+      /bin/bash ./loginsound install ;
       break
     ;;
     "set Moesound_MGd")
-      /bin/bash setsound $SoundMGd ;
-      /bin/bash loginsound install ;
+      /bin/bash ./setsound $SoundMGd ;
+      /bin/bash ./loginsound install ;
       break
     ;;
     "remove Moesound")
-      /bin/bash removesound ;
-      /bin/bash loginsound remove ;
+      /bin/bash ./removesound ;
+      /bin/bash ./loginsound remove ;
       break
     ;;
     "quit")
