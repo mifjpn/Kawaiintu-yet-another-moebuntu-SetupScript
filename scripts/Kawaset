@@ -32,19 +32,30 @@ Soundmaid_iori="${BASE_URL}/sound/Moesound_maid_iori.tar.gz"
 SoundSF_iori="${BASE_URL}/sound/Moesound_SF_iori.tar.gz"
 SoundMGd="${BASE_URL}/sound/Moesound_MGd.tar.gz"
 
-# ====== Firefox Titlebar Auto-Config ======
+# ====== Firefox UI Auto-Config ======
 fix_firefox_titlebar() {
-    echo -e "${COL_CYAN}[*] Configuring Firefox titlebar for Kawaiintu...${COL_RESET}"
+    echo -e "${COL_CYAN}[*] Configuring Firefox UI for Kawaiintu...${COL_RESET}"
     REAL_USER=${SUDO_USER:-$USER}
     USER_HOME=$(eval echo ~$REAL_USER)
     
-    # DEB版とSnap版両方のプロファイルを検索
-    for profile in "$USER_HOME/.mozilla/firefox/"*.default* "$USER_HOME/snap/firefox/common/.mozilla/firefox/"*.default*; do
+    # 従来版(.mozilla), Snap版, 新標準版(.config) の3パターンのプロファイルを全て検索
+    for profile in "$USER_HOME/.mozilla/firefox/"*.default* \
+                   "$USER_HOME/snap/firefox/common/.mozilla/firefox/"*.default* \
+                   "$USER_HOME/.config/mozilla/firefox/"*.default*; do
         if [ -d "$profile" ]; then
             if [ -f "$profile/user.js" ]; then
+                # 古い設定の重複を削除
                 sed -i '/browser.tabs.inTitlebar/d' "$profile/user.js"
+                sed -i '/extensions.activeThemeID/d' "$profile/user.js"
             fi
+            
+            # 1. タイトルバーを表示（システム枠を使用）
             echo 'user_pref("browser.tabs.inTitlebar", 0);' >> "$profile/user.js"
+            
+            # 2. テーマを「システムのテーマに従う（デフォルト）」に強制設定
+            echo 'user_pref("extensions.activeThemeID", "default-theme@mozilla.org");' >> "$profile/user.js"
+            
+            # 権限を一般ユーザーに戻す
             chown "$REAL_USER:$REAL_USER" "$profile/user.js"
         fi
     done
