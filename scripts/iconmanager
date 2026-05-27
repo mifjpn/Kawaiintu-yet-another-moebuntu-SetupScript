@@ -8,8 +8,10 @@ TEMP_DIR="Kawaiintu.temp"
 ICON_URL="https://raw.githubusercontent.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/main/icons/KawaiintuIcon.tar.xz"
 ICON_ARCHIVE="KawaiintuIcon.tar.xz"
 
-# 【追加】実行ユーザーを正しく判定する（SUDO_USERが空なら$USERを使う）
+# 実行ユーザーと、そのユーザーのD-Busセッションアドレスを取得
 TARGET_USER="${SUDO_USER:-$USER}"
+TARGET_UID=$(id -u "$TARGET_USER")
+DBUS_ENV="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${TARGET_UID}/bus"
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m          Kawaiintu Icon Manager         \x1b[39;49;00m"
@@ -37,9 +39,9 @@ if [ "$COMMAND" = "install" ]; then
     sudo cp -R "$TEMP_DIR/$ICON_DIR_NAME" /usr/share/icons/
 
     echo ">> Setting icon theme to $ICON_DIR_NAME..."
-    # 【修正】判定したTARGET_USERで設定を適用する
-    sudo -u "$TARGET_USER" dconf write /org/gnome/desktop/interface/icon-theme "'$ICON_DIR_NAME'" 2>/dev/null || \
-    sudo -u "$TARGET_USER" gsettings set org.gnome.desktop.interface icon-theme "$ICON_DIR_NAME"
+    # 【修正】D-Busセッションを明示してGNOME設定を書き換える
+    sudo -u "$TARGET_USER" env "$DBUS_ENV" dconf write /org/gnome/desktop/interface/icon-theme "'$ICON_DIR_NAME'" 2>/dev/null || \
+    sudo -u "$TARGET_USER" env "$DBUS_ENV" gsettings set org.gnome.desktop.interface icon-theme "$ICON_DIR_NAME"
 
     echo ">> Installation complete."
 
@@ -48,9 +50,9 @@ if [ "$COMMAND" = "install" ]; then
 
 elif [ "$COMMAND" = "remove" ]; then
     echo ">> Restoring default Ubuntu icons (Yaru)..."
-    # 【修正】判定したTARGET_USERで設定を適用する
-    sudo -u "$TARGET_USER" dconf write /org/gnome/desktop/interface/icon-theme "'Yaru'" 2>/dev/null || \
-    sudo -u "$TARGET_USER" gsettings set org.gnome.desktop.interface icon-theme "Yaru"
+    # 【修正】D-Busセッションを明示してデフォルトに戻す
+    sudo -u "$TARGET_USER" env "$DBUS_ENV" dconf write /org/gnome/desktop/interface/icon-theme "'Yaru'" 2>/dev/null || \
+    sudo -u "$TARGET_USER" env "$DBUS_ENV" gsettings set org.gnome.desktop.interface icon-theme "Yaru"
 
     echo ">> Removing Kawaiintu icons from system..."
     sudo rm -rf /usr/share/icons/Kawaiintu* /usr/share/icons/kawaiintu*
