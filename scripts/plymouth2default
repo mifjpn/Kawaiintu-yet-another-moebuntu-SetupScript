@@ -5,7 +5,7 @@
 # 正しいリポジトリURLに修正
 BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
-PLYMOUTH_URL="${BASE_URL}/themes/${PLYMOUTH_ARCHIVE}"
+PLYMOUTH_URL="${BASE_URL}/plymouth/${PLYMOUTH_ARCHIVE}"
 TEMP_DIR="Kawaiintu.plymouth.temp"
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
