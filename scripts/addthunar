@@ -26,13 +26,26 @@ fi
 
 # 3. カスタムアクション (uca.xml) の設定
 echo ">> Configuring Thunar custom actions..."
-# 画面にウィンドウが一瞬表示されるのを防ぐため、デーモン（バックグラウンド）モードで起動
-thunar --daemon &
-sleep 3
-# ユーザー権限のプロセスなのでsudoは不要です（不要なパスワード要求を回避）
-killall -q thunar >/dev/null 2>&1
 
-UCA_FILE="$HOME/.config/Thunar/uca.xml"
+UCA_DIR="$HOME/.config/Thunar"
+UCA_FILE="$UCA_DIR/uca.xml"
+
+# Thunarの設定ディレクトリが存在しなければ作成
+mkdir -p "$UCA_DIR"
+
+# uca.xmlが存在しない場合は、システムのデフォルトからコピーしてくる
+if [ ! -e "$UCA_FILE" ]; then
+  if [ -e "/etc/xdg/Thunar/uca.xml" ]; then
+    cp /etc/xdg/Thunar/uca.xml "$UCA_FILE"
+    echo ">> System default uca.xml copied."
+  else
+    # 万が一システムにデフォルトが存在しない場合のフォールバック（空のXMLを作成）
+    echo "<?xml encoding=\"UTF-8\" version=\"1.0\"?><actions></actions>" > "$UCA_FILE"
+    echo ">> Created new empty uca.xml."
+  fi
+fi
+
+# カスタムアクションの挿入処理
 if [ ! -e "${UCA_FILE}.bak" ]; then
   if [ -e "$UCA_FILE" ]; then
     echo ">> Injecting custom scripts into uca.xml..."
@@ -43,7 +56,7 @@ if [ ! -e "${UCA_FILE}.bak" ]; then
     
     echo ">> Custom actions configured."
   else
-    echo ">> Error: uca.xml not found."
+    echo ">> Error: uca.xml not found." # ここにはもう到達しないはずです
   fi
 else
   echo ">> Custom actions already configured (backup exists)."
@@ -53,3 +66,4 @@ echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer
 echo ""
+
