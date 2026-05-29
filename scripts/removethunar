@@ -8,7 +8,8 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 # 1. Dock（お気に入り）からの削除
 echo ">> Removing Thunar from dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
-FAVORITES=$(echo "$FAVORITES" | sed -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
+# 新しい kawaiintu-thunar も、古い thunar も両方Dockから剥がす
+FAVORITES=$(echo "$FAVORITES" | sed -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
 gsettings set org.gnome.shell favorite-apps "$FAVORITES"
 
 # 2. 実行中のプロセスの強制終了
@@ -31,7 +32,8 @@ rm -rf "$HOME/.config/thunar"
 # 5. アプリケーションメニューのアイコン設定（ローカルオーバーライド）の削除
 echo ">> Removing local menu icon override..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
-if [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
+if [ -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop" ] || [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
+  rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
   rm -f "$LOCAL_APP_DIR/thunar.desktop"
   update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
   echo ">> Local Thunar menu icon override removed."

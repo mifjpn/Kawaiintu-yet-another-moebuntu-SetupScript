@@ -15,9 +15,11 @@ sudo apt -y install thunar thunar-archive-plugin thunar-volman
 echo ">> Adding Thunar to dock as favorite..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-if [[ "$FAVORITES" != *"'thunar.desktop'"* ]]; then
-  # NautilusがDockにない場合でも失敗しないよう、配列の末尾に安全に追加するロジック
-  NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/]$/, 'thunar.desktop']/g" | sed "s/\[, /\[/g")
+if [[ "$FAVORITES" != *"'kawaiintu-thunar.desktop'"* ]]; then
+  # 古いピン留め(thunar.desktop)があれば一旦掃除
+  CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
+  # NautilusがDockにない場合でも失敗しないよう、配列の末尾に安全に追加
+  NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/]$/, 'kawaiintu-thunar.desktop']/g" | sed "s/\[, /\[/g")
   gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
   echo ">> Thunar added to favorites."
 else
@@ -62,20 +64,31 @@ else
   echo ">> Custom actions already configured (backup exists)."
 fi
 
-# 4. アプリケーションメニューのアイコン設定（ローカルオーバーライド）
+# 4. アプリケーションメニューのアイコン設定（GNOMEのブラックリスト回避）
 echo ">> Configuring local menu icon for Thunar..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$LOCAL_APP_DIR"
 
-if [ -f "/usr/share/applications/thunar.desktop" ]; then
-  cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
-  # Icon指定をfolder(Kawaiintuの基本フォルダ)に上書き
-  sed -i 's/^Icon=.*/Icon=folder/' "$LOCAL_APP_DIR/thunar.desktop"
-  update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
-  echo ">> Thunar menu icon overridden to Kawaiintu 'folder'."
-else
-  echo ">> Warning: /usr/share/applications/thunar.desktop not found."
-fi
+# 以前の呪われたローカル設定があれば削除
+rm -f "$LOCAL_APP_DIR/thunar.desktop"
+
+# 全く新しい別名で設定ファイルを作成し、Nautilusの可愛いアイコンを指定
+cat << 'EOF' > "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
+[Desktop Entry]
+Name=Thunar
+Name[ja]=Thunar
+Comment=Browse the filesystem
+Exec=thunar %U
+Icon=org.gnome.Nautilus
+Terminal=false
+Type=Application
+Categories=FileManager;Utility;Core;GTK;
+StartupNotify=true
+MimeType=inode/directory;
+EOF
+
+update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
+echo ">> Menu configuration applied (kawaiintu-thunar.desktop generated)."
 
 echo ""
 echo -n "Hit Any Key to return to menu: "
