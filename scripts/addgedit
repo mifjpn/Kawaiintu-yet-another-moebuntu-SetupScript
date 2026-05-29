@@ -1,0 +1,27 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Add Gedit
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m             Installing Gedit            \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. パッケージのインストール
+echo ">> Updating apt and installing gedit..."
+sudo apt update >/dev/null 2>&1
+sudo apt -y install gedit
+
+# 2. デフォルトエディタへの設定
+echo ">> Setting Gedit as the default text editor..."
+
+# GUI (ファイルマネージャーでダブルクリックした時のデフォルト)
+xdg-mime default org.gnome.gedit.desktop text/plain
+
+# CLI (ターミナルなどでシステムが呼び出すデフォルトエディタ)
+# エラーが出ても止まらないように安全策をとっています
+sudo update-alternatives --set editor /usr/bin/gedit >/dev/null 2>&1 || true
+
+echo ">> Gedit has been successfully installed and set as default."
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

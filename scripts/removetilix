@@ -1,0 +1,26 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Remove Tilix
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m             Removing Tilix              \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. デフォルト端末設定を標準（デフォルト）にリセット
+echo ">> Restoring system default terminal settings..."
+gsettings reset org.gnome.desktop.default-applications.terminal exec
+gsettings reset org.gnome.desktop.default-applications.terminal exec-arg
+
+# 2. ラッパースクリプトの削除
+echo ">> Removing Tilix wrapper..."
+sudo rm -f /usr/local/bin/tilix-wrapper
+
+# 3. Tilixの完全削除
+echo ">> Purging Tilix and cleaning up dependencies..."
+sudo apt purge -y tilix >/dev/null 2>&1
+sudo apt autoremove -y >/dev/null 2>&1
+
+echo ">> Tilix has been successfully removed."
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

@@ -20,10 +20,17 @@ CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop', //
                                           -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
                                           -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
 
-# 配列の先頭にkawaiintu-thunar.desktopを安全に挿入
-NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\[/\['kawaiintu-thunar.desktop', /g" | sed "s/, ]/]/g")
+# 配列の2番目にkawaiintu-thunar.desktopを挿入
+NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'kawaiintu-thunar.desktop', /")
+
+# フォールバック
+if [[ "$NEW_FAVORITES" == "$CLEAN_FAVORITES" ]]; then
+    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'kawaiintu-thunar.desktop'\]/" | sed "s/\[, /\[/")
+fi
+
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Done. Nautilus removed and Thunar added to favorites."
+
 # 3. カスタムアクション (uca.xml) の設定
 echo ">> Configuring Thunar custom actions..."
 

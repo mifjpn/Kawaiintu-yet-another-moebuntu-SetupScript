@@ -92,6 +92,11 @@ options=( 'base setting(Do first!)'
           'remove thunar'
           'add vlc(deb)'
           'remove vlc(deb)'
+          'add tilix'
+          'remove tilix'
+          'add gedit'
+          'remove gedit'
+          'Apply GTK Theme to Qt Apps'
           'set Moesound_iori'
           'set Moesound_maid_iori'
           'set Moesound_SF_iori'
@@ -211,6 +216,26 @@ do
     ;;
     "remove vlc(deb)")
       /bin/bash ./removevlc ;
+      break
+    ;;
+    "add tilix")
+      /bin/bash ./addtilix ;
+      break
+    ;;
+    "remove tilix")
+      /bin/bash ./removetilix ;
+      break
+    ;;
+    "add gedit")
+      /bin/bash ./addgedit ;
+      break
+    ;;
+    "remove gedit")
+      /bin/bash ./removegedit ;
+      break
+    ;;
+    "Apply GTK Theme to Qt Apps")
+      /bin/bash ./applyqttheme ;
       break
     ;;
     "set Moesound_iori")

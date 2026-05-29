@@ -1,0 +1,37 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Add Tilix with wrapper
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m             Installing Tilix            \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+# 1. パッケージのインストール
+echo ">> Updating apt and installing Tilix..."
+sudo apt update >/dev/null 2>&1
+# python3-nautilusは、ユーザーがNautilus環境に復元した時のための保険として導入
+sudo apt -y install tilix python3-nautilus
+
+# 2. Tilixラッパースクリプトの作成（ファイルマネージャーから引数を正しく受け取るため）
+echo ">> Creating Tilix wrapper for compatibility..."
+cat << 'EOF' | sudo tee /usr/local/bin/tilix-wrapper > /dev/null
+#!/bin/bash
+if [ $# -gt 0 ]; then
+    tilix -e bash -c "$* ; exec $SHELL"
+else
+    tilix
+fi
+EOF
+
+# 実行権限の付与
+sudo chmod +x /usr/local/bin/tilix-wrapper
+
+# 3. システムのデフォルト端末をラッパーに設定
+echo ">> Setting Tilix as the default terminal..."
+gsettings set org.gnome.desktop.default-applications.terminal exec '/usr/local/bin/tilix-wrapper'
+gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-e'
+
+echo ">> Tilix has been successfully installed and configured."
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""
