@@ -4,8 +4,8 @@
 COMMAND="$1"
 TEMP_DIR="Kawaiintu.temp"
 
-# GitHubのRaw URL（ご自身のリポジトリに合わせてパスを設定しています）
-ICON_URL="https://raw.githubusercontent.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/main/icons/KawaiintuIcon.tar.xz"
+# 【修正】URLを大文字の "Icon" に修正しました
+ICON_URL="https://raw.githubusercontent.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/main/Icon/KawaiintuIcon.tar.xz"
 ICON_ARCHIVE="KawaiintuIcon.tar.xz"
 
 # 実行ユーザーと、そのユーザーのD-Busセッションアドレスを取得
@@ -18,19 +18,35 @@ echo -e "\x1b[36;01m          Kawaiintu Icon Manager         \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 if [ "$COMMAND" = "install" ]; then
+    # curl がインストールされているか確認し、無ければ入れる
+    if ! command -v curl >/dev/null 2>&1; then
+        echo ">> curl is not installed. Installing curl..."
+        sudo apt update && sudo apt install -y curl
+    fi
+
     echo ">> Creating temporary directory ($TEMP_DIR)..."
-    mkdir -p "$TEMP_DIR"
+    mkdir -p "$TEMP_DIR/KawaiintuIcon"
 
     echo ">> Downloading $ICON_ARCHIVE..."
-    curl -L "$ICON_URL" --output "$TEMP_DIR/$ICON_ARCHIVE" >/dev/null 2>&1
+    # 【修正】-f を付けて404エラー時に処理を止めるようにし、エラー出力を隠さない
+    if ! curl -fL "$ICON_URL" -o "$TEMP_DIR/$ICON_ARCHIVE"; then
+        echo ">> Error: Failed to download the icon archive. Please check the URL or network."
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
 
     echo ">> Extracting icons..."
-    tar -Jxf "$TEMP_DIR/$ICON_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
+    # 【修正】解凍エラーも表示させる
+    if ! tar -Jxf "$TEMP_DIR/$ICON_ARCHIVE" -C "$TEMP_DIR/KawaiintuIcon"; then
+        echo ">> Error: Failed to extract the archive. The file might be corrupted."
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
 
-    ICON_DIR_NAME=$(ls -d "$TEMP_DIR"/*/ 2>/dev/null | head -n 1 | xargs basename)
+    ICON_DIR_NAME="KawaiintuIcon"
 
-    if [ -z "$ICON_DIR_NAME" ]; then
-        echo ">> Error: Failed to extract or detect icon directory."
+    if [ ! -f "$TEMP_DIR/$ICON_DIR_NAME/index.theme" ]; then
+        echo ">> Error: Failed to detect index.theme in the extracted files."
         rm -rf "$TEMP_DIR"
         exit 1
     fi
@@ -39,7 +55,6 @@ if [ "$COMMAND" = "install" ]; then
     sudo cp -R "$TEMP_DIR/$ICON_DIR_NAME" /usr/share/icons/
 
     echo ">> Setting icon theme to $ICON_DIR_NAME..."
-    # 【修正】D-Busセッションを明示してGNOME設定を書き換える
     sudo -u "$TARGET_USER" env "$DBUS_ENV" dconf write /org/gnome/desktop/interface/icon-theme "'$ICON_DIR_NAME'" 2>/dev/null || \
     sudo -u "$TARGET_USER" env "$DBUS_ENV" gsettings set org.gnome.desktop.interface icon-theme "$ICON_DIR_NAME"
 
@@ -50,7 +65,6 @@ if [ "$COMMAND" = "install" ]; then
 
 elif [ "$COMMAND" = "remove" ]; then
     echo ">> Restoring default Ubuntu icons (Yaru)..."
-    # 【修正】D-Busセッションを明示してデフォルトに戻す
     sudo -u "$TARGET_USER" env "$DBUS_ENV" dconf write /org/gnome/desktop/interface/icon-theme "'Yaru'" 2>/dev/null || \
     sudo -u "$TARGET_USER" env "$DBUS_ENV" gsettings set org.gnome.desktop.interface icon-theme "Yaru"
 
