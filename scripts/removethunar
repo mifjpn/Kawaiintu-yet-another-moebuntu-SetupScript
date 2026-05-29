@@ -28,6 +28,15 @@ rm -rf "$HOME/.config/Thunar"
 # 念のため小文字のディレクトリがあった場合も削除
 rm -rf "$HOME/.config/thunar"
 
+# 5. アプリケーションメニューのアイコン設定（ローカルオーバーライド）の削除
+echo ">> Removing local menu icon override..."
+LOCAL_APP_DIR="$HOME/.local/share/applications"
+if [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
+  rm -f "$LOCAL_APP_DIR/thunar.desktop"
+  update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
+  echo ">> Local Thunar menu icon override removed."
+fi
+
 echo ">> Thunar has been successfully removed."
 echo ""
 echo -n "Hit Any Key to return to menu: "

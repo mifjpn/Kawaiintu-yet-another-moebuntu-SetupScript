@@ -62,8 +62,22 @@ else
   echo ">> Custom actions already configured (backup exists)."
 fi
 
+# 4. アプリケーションメニューのアイコン設定（ローカルオーバーライド）
+echo ">> Configuring local menu icon for Thunar..."
+LOCAL_APP_DIR="$HOME/.local/share/applications"
+mkdir -p "$LOCAL_APP_DIR"
+
+if [ -f "/usr/share/applications/thunar.desktop" ]; then
+  cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
+  # Icon指定をfolder(Kawaiintuの基本フォルダ)に上書き
+  sed -i 's/^Icon=.*/Icon=folder/' "$LOCAL_APP_DIR/thunar.desktop"
+  update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
+  echo ">> Thunar menu icon overridden to Kawaiintu 'folder'."
+else
+  echo ">> Warning: /usr/share/applications/thunar.desktop not found."
+fi
+
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer
 echo ""
-
