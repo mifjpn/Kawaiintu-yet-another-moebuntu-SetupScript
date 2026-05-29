@@ -10,9 +10,18 @@ echo ">> Update apt and install nemo..."
 sudo apt update >/dev/null 2>&1
 sudo apt -y install nemo
 
-# 2. Dock（お気に入り）への追加
-echo ">> Adding nemo to dock as favorite..."
+# 2. Dock（お気に入り）への追加（Nautilusを削除してNemoを挿入）
+echo ">> Replacing Nautilus with Nemo in dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+
+# 一旦Nautilusと既存のNemoの登録を完全に消去して綺麗にする
+CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop', //g" -e "s/, 'org.gnome.Nautilus.desktop'//g" -e "s/'org.gnome.Nautilus.desktop'//g" \
+                                          -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
+
+# 配列の先頭にnemo.desktopを安全に挿入
+NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\[/\['nemo.desktop', /g" | sed "s/, ]/]/g")
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+echo ">> Done. Nautilus removed and Nemo added to favorites."
 
 # Nemoがすでに登録されていない場合のみ追加処理を行う
 if [[ "$FAVORITES" != *"'nemo.desktop'"* ]]; then

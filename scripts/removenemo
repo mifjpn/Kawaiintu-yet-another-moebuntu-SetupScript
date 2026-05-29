@@ -5,11 +5,21 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m              Removing Nemo              \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Dock（お気に入り）からの削除
-echo ">> Removing Nemo from dock..."
+# 1. Dock（お気に入り）からの削除とNautilusの復元
+echo ">> Removing Nemo and restoring Nautilus to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
-FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
-gsettings set org.gnome.shell favorite-apps "$FAVORITES"
+
+# Nemoの登録を消去
+CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
+
+# Nautilusが現在Dockにない場合のみ、先頭に復元する
+if [[ "$CLEAN_FAVORITES" != *"'org.gnome.Nautilus.desktop'"* ]]; then
+  NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\[/\['org.gnome.Nautilus.desktop', /g" | sed "s/, ]/]/g")
+  gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+  echo ">> Nautilus has been restored to favorites."
+else
+  gsettings set org.gnome.shell favorite-apps "$CLEAN_FAVORITES"
+fi
 
 # 2. Nemoの完全削除（パージ）と不要パッケージの自動削除
 echo ">> Purging Nemo and cleaning up dependencies..."

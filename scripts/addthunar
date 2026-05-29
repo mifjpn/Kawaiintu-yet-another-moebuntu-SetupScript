@@ -11,21 +11,19 @@ sudo apt update >/dev/null 2>&1
 # 危険なワイルドカード (thunar*) を避け、必要なコアパッケージのみを明示指定します
 sudo apt -y install thunar thunar-archive-plugin thunar-volman
 
-# 2. Dock（お気に入り）への追加
-echo ">> Adding Thunar to dock as favorite..."
+# 2. Dock（お気に入り）への追加（Nautilusを削除してThunarを挿入）
+echo ">> Replacing Nautilus with Thunar in dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-if [[ "$FAVORITES" != *"'kawaiintu-thunar.desktop'"* ]]; then
-  # 古いピン留め(thunar.desktop)があれば一旦掃除
-  CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
-  # NautilusがDockにない場合でも失敗しないよう、配列の末尾に安全に追加
-  NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/]$/, 'kawaiintu-thunar.desktop']/g" | sed "s/\[, /\[/g")
-  gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-  echo ">> Thunar added to favorites."
-else
-  echo ">> Thunar is already in your favorites."
-fi
+# 一旦Nautilusと新旧のThunar登録を完全に消去して綺麗にする
+CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop', //g" -e "s/, 'org.gnome.Nautilus.desktop'//g" -e "s/'org.gnome.Nautilus.desktop'//g" \
+                                          -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
+                                          -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
 
+# 配列の先頭にkawaiintu-thunar.desktopを安全に挿入
+NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\[/\['kawaiintu-thunar.desktop', /g" | sed "s/, ]/]/g")
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+echo ">> Done. Nautilus removed and Thunar added to favorites."
 # 3. カスタムアクション (uca.xml) の設定
 echo ">> Configuring Thunar custom actions..."
 
