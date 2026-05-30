@@ -90,13 +90,12 @@ options=( 'base setting(Do first!)'
           'remove nemo'
           'add thunar'
           'remove thunar'
-          'add parole(動画ソフト)'
-          'remove parole(動画ソフト)'
+          'add parole(Video Player)'
+          'remove parole(Video Player)'
           'add tilix'
           'remove tilix'
           'add gedit'
           'remove gedit'
-          'Apply GTK Theme to Qt Apps'
           'set Moesound_iori'
           'set Moesound_maid_iori'
           'set Moesound_SF_iori'
@@ -210,11 +209,11 @@ do
       /bin/bash ./removethunar ;
       break
     ;;
-    "add parole(動画ソフト)")
+    "add parole(Video Player)")
       /bin/bash ./addparole;
       break
     ;;
-    "remove parole(動画ソフト)")
+    "remove parole(Video Player)")
       /bin/bash ./removeparole ;
       break
     ;;
@@ -232,10 +231,6 @@ do
     ;;
     "remove gedit")
       /bin/bash ./removegedit ;
-      break
-    ;;
-    "Apply GTK Theme to Qt Apps")
-      /bin/bash ./applyqttheme ;
       break
     ;;
     "set Moesound_iori")

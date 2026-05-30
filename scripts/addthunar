@@ -5,31 +5,31 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Thunar               \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. aptでのインストール（圧縮・解凍ツールも同時インストール）
+# 1. Install via apt (along with compression/extraction tools)
 echo ">> Updating apt and installing Thunar & Archive tools..."
 sudo apt update >/dev/null 2>&1
-# thunarの基本パッケージに加え、一撃圧縮用のzenityや標準解凍ツールのfile-roller等を追加
+# Add zenity for one-click compression and file-roller as standard extractor
 sudo apt -y install thunar thunar-archive-plugin thunar-volman file-roller zip unzip xz-utils zenity
 
 # ---------------------------------------------------------
-# 2. Thunarのアイコン修正 (~/.localへの完全な上書き配置)
+# 2. Fix Thunar icon (Overwrite completely in ~/.local)
 # ---------------------------------------------------------
 echo ">> Configuring local menu icon for Thunar..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$LOCAL_APP_DIR"
 
-# もし過去の遺物（kawaiintu-thunarなど）があれば削除
+# Remove legacy files (e.g., kawaiintu-thunar) if they exist
 rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar.desktop"
 
-# システムの元の設定ファイルをローカルにコピー
+# Copy original system config file to local directory
 if [ -f /usr/share/applications/thunar.desktop ]; then
     cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
     
-    # アイコン指定をGNOME標準の汎用ファイラアイコン（テーマ対応）に書き換え
+    # Overwrite icon to GNOME standard generic file manager icon (Theme compatible)
     sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
     
-    # 確実に関連付けさせるために、ファイル内に StartupWMClass が無ければ追記
+    # Append StartupWMClass if it doesn't exist for reliable association
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
         echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
     fi
@@ -38,7 +38,7 @@ if [ -f /usr/share/applications/thunar.desktop ]; then
 fi
 
 # ---------------------------------------------------------
-# 3. Dock（お気に入り）への追加
+# 3. Add to Dock (Favorites)
 # ---------------------------------------------------------
 echo ">> Replacing Nautilus with Thunar in dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
@@ -57,7 +57,7 @@ gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Done. Nautilus removed and Thunar added to favorites."
 
 # ---------------------------------------------------------
-# 4. Thunar (XFCE) 固有のターミナル呼び出し設定 (Tilixラッパー対応)
+# 4. Configure Thunar (XFCE) terminal call setting (Tilix wrapper support)
 # ---------------------------------------------------------
 echo ">> Configuring terminal settings for Thunar (XFCE base)..."
 mkdir -p ~/.config/xfce4
@@ -86,7 +86,7 @@ Name=Custom Terminal Wrapper
 EOF
 
 # ---------------------------------------------------------
-# 5. Thunar カスタムアクション (uca.xml) への「一撃圧縮」追加
+# 5. Inject direct compression to Thunar custom actions (uca.xml)
 # ---------------------------------------------------------
 echo ">> Injecting direct compression actions to Thunar (uca.xml)..."
 UCA_DIR="$HOME/.config/Thunar"
@@ -94,7 +94,7 @@ UCA_FILE="$UCA_DIR/uca.xml"
 
 mkdir -p "$UCA_DIR"
 
-# uca.xmlが存在しない場合は、システムのデフォルトからコピーするか空の枠を作る
+# If uca.xml does not exist, copy from system default or create an empty structure
 if [ ! -f "$UCA_FILE" ]; then
     if [ -f "/etc/xdg/Thunar/uca.xml" ]; then
         cp /etc/xdg/Thunar/uca.xml "$UCA_FILE"
@@ -103,15 +103,15 @@ if [ ! -f "$UCA_FILE" ]; then
     fi
 fi
 
-# すでに登録済みでなければ、ZIPとtar.xzのアクションを追記する
+# Append ZIP and tar.xz actions if not already registered
 if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
     cat << 'EOF' > /tmp/thunar-compress.xml
 <action>
     <icon>application-zip</icon>
-    <name>選択項目を ZIP に圧縮</name>
+    <name>Compress to ZIP</name>
     <unique-id>kawaiintu-compress-zip</unique-id>
-    <command>bash -c 'NAME=$(zenity --entry --title="ZIP圧縮" --text="保存するファイル名を入力:" --entry-text="Archive.zip"); if [ -n "$NAME" ]; then zip -r "$NAME" "$@"; fi' _ %N</command>
-    <description>選択したファイル/フォルダを即座にZIP圧縮します</description>
+    <command>bash -c 'NAME=$(zenity --entry --title="ZIP Compression" --text="Enter output filename:" --entry-text="Archive.zip"); if [ -n "$NAME" ]; then zip -r "$NAME" "$@"; fi' _ %N</command>
+    <description>Instantly compress selected items to ZIP</description>
     <patterns>*</patterns>
     <directories/>
     <audio-files/>
@@ -122,10 +122,10 @@ if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
 </action>
 <action>
     <icon>application-x-xz-compressed-tar</icon>
-    <name>選択項目を tar.xz に圧縮</name>
+    <name>Compress to tar.xz</name>
     <unique-id>kawaiintu-compress-tarxz</unique-id>
-    <command>bash -c 'NAME=$(zenity --entry --title="tar.xz圧縮" --text="保存するファイル名を入力:" --entry-text="Archive.tar.xz"); if [ -n "$NAME" ]; then tar -cJf "$NAME" "$@"; fi' _ %N</command>
-    <description>選択したファイル/フォルダを即座にtar.xz圧縮します</description>
+    <command>bash -c 'NAME=$(zenity --entry --title="tar.xz Compression" --text="Enter output filename:" --entry-text="Archive.tar.xz"); if [ -n "$NAME" ]; then tar -cJf "$NAME" "$@"; fi' _ %N</command>
+    <description>Instantly compress selected items to tar.xz</description>
     <patterns>*</patterns>
     <directories/>
     <audio-files/>
@@ -141,9 +141,13 @@ EOF
 fi
 
 # ---------------------------------------------------------
-# 6. デフォルトファイルマネージャーの指定
+# 6. Set as default file manager & Create dummy templates
 # ---------------------------------------------------------
 xdg-mime default thunar.desktop inode/directory
+
+# Create dummy files to silence Thunar's missing template warning
+mkdir -p ~/Templates 2>/dev/null
+touch ~/Templates/"Text File.txt" 2>/dev/null
 
 echo ">> Thunar setup is fully completed (with Compression Actions)."
 echo ""

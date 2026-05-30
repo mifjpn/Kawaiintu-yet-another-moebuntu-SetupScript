@@ -8,22 +8,34 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 # 1. パッケージのインストール
 echo ">> Updating apt and installing Tilix..."
 sudo apt update >/dev/null 2>&1
-# python3-nautilusは、ユーザーがNautilus環境に復元した時のための保険として導入
 sudo apt -y install tilix python3-nautilus
 
-# 2. Tilixラッパースクリプトの作成（ファイルマネージャーから引数を正しく受け取るため）
+# 2. Tilixラッパースクリプトの作成（ファイル/ディレクトリ/コマンドの全対応版）
 echo ">> Creating Tilix wrapper for compatibility..."
 cat << 'EOF' | sudo tee /usr/local/bin/tilix-wrapper > /dev/null
 #!/bin/bash
-# Thunarなどのファイラが勝手に付与するターミナル実行オプション（-e, -x）を除外
+# Thunarなどのファイラが勝手に付与するターミナル実行オプションを除外
 if [ "$1" = "-e" ] || [ "$1" = "-x" ]; then
     shift
 fi
 
 if [ $# -gt 0 ]; then
-    # 画面を残すロジック（ユーザーのシェルを呼び出して待機）
-    tilix -e bash -c "$* ; echo -e '\n[プロセスが終了しました]'; exec $SHELL"
+    # 1. 引数が「実在するファイル（スクリプト）」の場合
+    if [ -f "$1" ]; then
+        TARGET_DIR="$(dirname "$(realpath "$1")")"
+        TARGET_FILE="$(basename "$(realpath "$1")")"
+        tilix --working-directory="$TARGET_DIR" -e bash -c "\"./$TARGET_FILE\" ; echo -e '\n[Process completed]'; exec \$SHELL"
+        
+    # 2. 引数が「実在するディレクトリ」の場合（Open Terminal Hereの引数渡し対策）
+    elif [ -d "$1" ]; then
+        tilix --working-directory="$(realpath "$1")"
+        
+    # 3. それ以外の「通常のコマンド」の場合
+    else
+        tilix -e bash -c "$* ; echo -e '\n[Process completed]'; exec \$SHELL"
+    fi
 else
+    # 4. 引数なし
     tilix
 fi
 EOF
@@ -82,7 +94,6 @@ FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 if [[ "$FAVORITES" == *"'org.gnome.Terminal.desktop'"* ]]; then
     NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'org.gnome.Terminal.desktop'/'com.gexperts.Tilix.desktop'/g")
 else
-    # Tilixが重複しないよう一旦消去して末尾に追加
     CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'com.gexperts.Tilix.desktop', //g" -e "s/, 'com.gexperts.Tilix.desktop'//g" -e "s/'com.gexperts.Tilix.desktop'//g")
     NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'com.gexperts.Tilix.desktop'\]/" | sed "s/\[, /\[/")
 fi
