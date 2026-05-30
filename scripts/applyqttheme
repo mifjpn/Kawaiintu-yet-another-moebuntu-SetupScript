@@ -1,26 +1,54 @@
 #!/bin/bash
-# Kawaiintu Setup Helper - Apply GTK Theme to Qt Apps
+# Kawaiintu Setup Helper - Apply GTK Theme to Qt Apps (The Ultimate Fix)
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m      Configuring Qt Apps Theme          \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-echo ">> Installing Qt-GTK integration packages..."
+echo ">> Installing Qt-GTK integration and styling plugins..."
 sudo apt update >/dev/null 2>&1
-sudo apt -y install qt5-gtk-platformtheme qt6-gtk-platformtheme qtwayland5
 
-echo ">> Setting environment variables for Qt..."
+# qt5ct が gtk3 を認識するために必要なパッケージ群を網羅的にインストール
+sudo apt -y install qt5ct qt6ct qtwayland5 qt6-wayland qt5-gtk-platformtheme qt6-gtk-platformtheme
+# Ubuntuのバージョンによっては以下のパッケージが欠落しているため、明示的に追加を試みる（エラー無視）
+sudo apt -y install qt5-style-plugins || true
+
+echo ">> Setting global environment variables for Qt..."
 QT_ENV_FILE="/etc/profile.d/kawaiintu-qt-theme.sh"
 
+# 強制的に qt5ct (と qt6ct) を使用するように設定
 sudo bash -c "cat << 'EOF' > $QT_ENV_FILE
-# Force Qt applications to use the GTK3 theme engine
-export QT_QPA_PLATFORMTHEME=gtk3
+# Force Qt applications to use the configuration tool
+export QT_QPA_PLATFORMTHEME=qt5ct
+# For Qt6 compatibility
+export QT_QPA_PLATFORMTHEME=qt6ct
 EOF"
-
 sudo chmod +x "$QT_ENV_FILE"
 
-echo ">> Done. Qt applications will now respect your GTK theme."
-echo ">> (Note: Theme changes will fully take effect after the next login)"
+echo ">> Configuring qt5ct and qt6ct to enforce GTK3 style..."
+# ユーザーのホームディレクトリに qt5ct/qt6ct の設定ファイルを直接生成する
+QT5CT_CONF="$HOME/.config/qt5ct/qt5ct.conf"
+QT6CT_CONF="$HOME/.config/qt6ct/qt6ct.conf"
+
+mkdir -p "$HOME/.config/qt5ct"
+mkdir -p "$HOME/.config/qt6ct"
+
+# qt5ct.confの生成
+cat << 'EOF' > "$QT5CT_CONF"
+[Appearance]
+style=gtk3
+icon_theme=kawaiintu
+EOF
+
+# qt6ct.confの生成
+cat << 'EOF' > "$QT6CT_CONF"
+[Appearance]
+style=gtk3
+icon_theme=kawaiintu
+EOF
+
+echo ">> Qt theme setup is complete!"
+echo ">> [IMPORTANT] You must LOG OUT and LOG IN again for changes to take effect."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer

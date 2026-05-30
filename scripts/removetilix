@@ -5,16 +5,46 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m             Removing Tilix              \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. デフォルト端末設定を標準（デフォルト）にリセット
-echo ">> Restoring system default terminal settings..."
+# 1. 【GNOME】デフォルト端末設定を標準（デフォルト）にリセット
+echo ">> Restoring system default terminal settings (GNOME)..."
 gsettings reset org.gnome.desktop.default-applications.terminal exec
 gsettings reset org.gnome.desktop.default-applications.terminal exec-arg
 
-# 2. ラッパースクリプトの削除
+# 2. 【Debian】x-terminal-emulator の上書きを解除
+echo ">> Restoring system alternatives (x-terminal-emulator)..."
+sudo update-alternatives --remove x-terminal-emulator /usr/local/bin/tilix-wrapper >/dev/null 2>&1
+sudo update-alternatives --auto x-terminal-emulator >/dev/null 2>&1
+
+# 3. 【XFCE/Thunar】独自ヘルパー設定の削除
+echo ">> Removing XFCE/Thunar terminal helper settings..."
+rm -f ~/.config/xfce4/helpers.rc
+rm -f ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
+# 空になったディレクトリを整理
+rmdir ~/.local/share/xfce4/helpers 2>/dev/null || true
+rmdir ~/.config/xfce4 2>/dev/null || true
+
+# 4. 【Tilix設定】dconfのTilix関連設定をリセット（プロファイル・背景色など）
+echo ">> Resetting Tilix dconf settings..."
+dconf reset -f /com/gexperts/Tilix/ 2>/dev/null || true
+
+# 5. 【Dock】DockからTilixを削除し、標準Terminalを復元
+echo ">> Restoring standard Terminal to dock favorites..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+
+if [[ "$FAVORITES" == *"'com.gexperts.Tilix.desktop'"* ]]; then
+    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'com.gexperts.Tilix.desktop'/'org.gnome.Terminal.desktop'/g")
+else
+    # Tilixが見つからない場合のフォールバック（標準Terminalを末尾に確実に追加）
+    CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Terminal.desktop', //g" -e "s/, 'org.gnome.Terminal.desktop'//g" -e "s/'org.gnome.Terminal.desktop'//g")
+    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Terminal.desktop'\]/" | sed "s/\[, /\[/")
+fi
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+
+# 6. ラッパースクリプトの削除
 echo ">> Removing Tilix wrapper..."
 sudo rm -f /usr/local/bin/tilix-wrapper
 
-# 3. Tilixの完全削除
+# 7. Tilixの完全削除
 echo ">> Purging Tilix and cleaning up dependencies..."
 sudo apt purge -y tilix >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1

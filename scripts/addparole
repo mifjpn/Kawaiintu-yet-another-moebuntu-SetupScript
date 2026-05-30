@@ -1,0 +1,25 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Add Parole (Pure GTK3 Video Player)
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m            Installing Parole            \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+echo ">> Updating apt and installing Parole Media Player..."
+sudo apt update >/dev/null 2>&1
+# gstreamerのプラグインも一緒に入れて再生できる形式を増やします
+sudo apt -y install parole gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+
+echo ">> Setting Parole as the default video player..."
+# Paroleを動画のデフォルトに設定
+xdg-mime default org.xfce.Parole.desktop video/mp4
+xdg-mime default org.xfce.Parole.desktop video/x-matroska
+xdg-mime default org.xfce.Parole.desktop video/x-msvideo
+xdg-mime default org.xfce.Parole.desktop video/quicktime
+
+echo ">> Parole has been successfully installed and set as default."
+echo ">> Your Kawaiintu GTK theme will be applied perfectly!"
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

@@ -5,96 +5,147 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Thunar               \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. aptでのインストール
-echo ">> Updating apt and installing Thunar..."
+# 1. aptでのインストール（圧縮・解凍ツールも同時インストール）
+echo ">> Updating apt and installing Thunar & Archive tools..."
 sudo apt update >/dev/null 2>&1
-# 危険なワイルドカード (thunar*) を避け、必要なコアパッケージのみを明示指定します
-sudo apt -y install thunar thunar-archive-plugin thunar-volman
+# thunarの基本パッケージに加え、一撃圧縮用のzenityや標準解凍ツールのfile-roller等を追加
+sudo apt -y install thunar thunar-archive-plugin thunar-volman file-roller zip unzip xz-utils zenity
 
-# 2. Dock（お気に入り）への追加（Nautilusを削除してThunarを挿入）
+# ---------------------------------------------------------
+# 2. Thunarのアイコン修正 (~/.localへの完全な上書き配置)
+# ---------------------------------------------------------
+echo ">> Configuring local menu icon for Thunar..."
+LOCAL_APP_DIR="$HOME/.local/share/applications"
+mkdir -p "$LOCAL_APP_DIR"
+
+# もし過去の遺物（kawaiintu-thunarなど）があれば削除
+rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
+rm -f "$LOCAL_APP_DIR/thunar.desktop"
+
+# システムの元の設定ファイルをローカルにコピー
+if [ -f /usr/share/applications/thunar.desktop ]; then
+    cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
+    
+    # アイコン指定をGNOME標準の汎用ファイラアイコン（テーマ対応）に書き換え
+    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
+    
+    # 確実に関連付けさせるために、ファイル内に StartupWMClass が無ければ追記
+    if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
+        echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
+    fi
+    
+    update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
+fi
+
+# ---------------------------------------------------------
+# 3. Dock（お気に入り）への追加
+# ---------------------------------------------------------
 echo ">> Replacing Nautilus with Thunar in dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-# 一旦Nautilusと新旧のThunar登録を完全に消去して綺麗にする
 CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop', //g" -e "s/, 'org.gnome.Nautilus.desktop'//g" -e "s/'org.gnome.Nautilus.desktop'//g" \
                                           -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
                                           -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
 
-# 配列の2番目にkawaiintu-thunar.desktopを挿入
-NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'kawaiintu-thunar.desktop', /")
+NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'thunar.desktop', /")
 
-# フォールバック
 if [[ "$NEW_FAVORITES" == "$CLEAN_FAVORITES" ]]; then
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'kawaiintu-thunar.desktop'\]/" | sed "s/\[, /\[/")
+    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'thunar.desktop'\]/" | sed "s/\[, /\[/")
 fi
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Done. Nautilus removed and Thunar added to favorites."
 
-# 3. カスタムアクション (uca.xml) の設定
-echo ">> Configuring Thunar custom actions..."
+# ---------------------------------------------------------
+# 4. Thunar (XFCE) 固有のターミナル呼び出し設定 (Tilixラッパー対応)
+# ---------------------------------------------------------
+echo ">> Configuring terminal settings for Thunar (XFCE base)..."
+mkdir -p ~/.config/xfce4
+mkdir -p ~/.local/share/xfce4/helpers
 
+cat << 'EOF' > ~/.config/xfce4/helpers.rc
+TerminalEmulator=custom-TerminalEmulator
+EOF
+
+if [ -f /usr/local/bin/tilix-wrapper ]; then
+    WRAPPER_PATH="/usr/local/bin/tilix-wrapper"
+else
+    WRAPPER_PATH="x-terminal-emulator"
+fi
+
+cat << EOF > ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
+[Desktop Entry]
+NoDisplay=true
+Version=1.0
+Encoding=UTF-8
+Type=X-XFCE-Helper
+X-XFCE-Category=TerminalEmulator
+X-XFCE-CommandsWithParameter=$WRAPPER_PATH -e "%s"
+Icon=tilix
+Name=Custom Terminal Wrapper
+EOF
+
+# ---------------------------------------------------------
+# 5. Thunar カスタムアクション (uca.xml) への「一撃圧縮」追加
+# ---------------------------------------------------------
+echo ">> Injecting direct compression actions to Thunar (uca.xml)..."
 UCA_DIR="$HOME/.config/Thunar"
 UCA_FILE="$UCA_DIR/uca.xml"
 
-# Thunarの設定ディレクトリが存在しなければ作成
 mkdir -p "$UCA_DIR"
 
-# uca.xmlが存在しない場合は、システムのデフォルトからコピーしてくる
-if [ ! -e "$UCA_FILE" ]; then
-  if [ -e "/etc/xdg/Thunar/uca.xml" ]; then
-    cp /etc/xdg/Thunar/uca.xml "$UCA_FILE"
-    echo ">> System default uca.xml copied."
-  else
-    # 万が一システムにデフォルトが存在しない場合のフォールバック（空のXMLを作成）
-    echo "<?xml encoding=\"UTF-8\" version=\"1.0\"?><actions></actions>" > "$UCA_FILE"
-    echo ">> Created new empty uca.xml."
-  fi
+# uca.xmlが存在しない場合は、システムのデフォルトからコピーするか空の枠を作る
+if [ ! -f "$UCA_FILE" ]; then
+    if [ -f "/etc/xdg/Thunar/uca.xml" ]; then
+        cp /etc/xdg/Thunar/uca.xml "$UCA_FILE"
+    else
+        echo '<?xml encoding="UTF-8" version="1.0"?><actions></actions>' > "$UCA_FILE"
+    fi
 fi
 
-# カスタムアクションの挿入処理
-if [ ! -e "${UCA_FILE}.bak" ]; then
-  if [ -e "$UCA_FILE" ]; then
-    echo ">> Injecting custom scripts into uca.xml..."
-    cp "$UCA_FILE" "${UCA_FILE}.bak"
-    
-    # 確実に </actions> タグの直前にテキストファイルを挿入するための安全なawkコマンド
-    awk '/<\/actions>/{system("cat ./thunar-execute-script.txt")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
-    
-    echo ">> Custom actions configured."
-  else
-    echo ">> Error: uca.xml not found." # ここにはもう到達しないはずです
-  fi
-else
-  echo ">> Custom actions already configured (backup exists)."
-fi
-
-# 4. アプリケーションメニューのアイコン設定（GNOMEのブラックリスト回避）
-echo ">> Configuring local menu icon for Thunar..."
-LOCAL_APP_DIR="$HOME/.local/share/applications"
-mkdir -p "$LOCAL_APP_DIR"
-
-# 以前の呪われたローカル設定があれば削除
-rm -f "$LOCAL_APP_DIR/thunar.desktop"
-
-# 全く新しい別名で設定ファイルを作成し、Nautilusの可愛いアイコンを指定
-cat << 'EOF' > "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
-[Desktop Entry]
-Name=Thunar
-Name[ja]=Thunar
-Comment=Browse the filesystem
-Exec=thunar %U
-Icon=org.gnome.Nautilus
-Terminal=false
-Type=Application
-Categories=FileManager;Utility;Core;GTK;
-StartupNotify=true
-MimeType=inode/directory;
+# すでに登録済みでなければ、ZIPとtar.xzのアクションを追記する
+if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
+    cat << 'EOF' > /tmp/thunar-compress.xml
+<action>
+    <icon>application-zip</icon>
+    <name>選択項目を ZIP に圧縮</name>
+    <unique-id>kawaiintu-compress-zip</unique-id>
+    <command>bash -c 'NAME=$(zenity --entry --title="ZIP圧縮" --text="保存するファイル名を入力:" --entry-text="Archive.zip"); if [ -n "$NAME" ]; then zip -r "$NAME" "$@"; fi' _ %N</command>
+    <description>選択したファイル/フォルダを即座にZIP圧縮します</description>
+    <patterns>*</patterns>
+    <directories/>
+    <audio-files/>
+    <image-files/>
+    <other-files/>
+    <text-files/>
+    <video-files/>
+</action>
+<action>
+    <icon>application-x-xz-compressed-tar</icon>
+    <name>選択項目を tar.xz に圧縮</name>
+    <unique-id>kawaiintu-compress-tarxz</unique-id>
+    <command>bash -c 'NAME=$(zenity --entry --title="tar.xz圧縮" --text="保存するファイル名を入力:" --entry-text="Archive.tar.xz"); if [ -n "$NAME" ]; then tar -cJf "$NAME" "$@"; fi' _ %N</command>
+    <description>選択したファイル/フォルダを即座にtar.xz圧縮します</description>
+    <patterns>*</patterns>
+    <directories/>
+    <audio-files/>
+    <image-files/>
+    <other-files/>
+    <text-files/>
+    <video-files/>
+</action>
 EOF
+    cp "$UCA_FILE" "${UCA_FILE}.bak"
+    awk '/<\/actions>/{system("cat /tmp/thunar-compress.xml")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
+    rm -f /tmp/thunar-compress.xml
+fi
 
-update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
-echo ">> Menu configuration applied (kawaiintu-thunar.desktop generated)."
+# ---------------------------------------------------------
+# 6. デフォルトファイルマネージャーの指定
+# ---------------------------------------------------------
+xdg-mime default thunar.desktop inode/directory
 
+echo ">> Thunar setup is fully completed (with Compression Actions)."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer

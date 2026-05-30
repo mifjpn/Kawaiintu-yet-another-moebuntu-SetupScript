@@ -1,0 +1,22 @@
+#!/bin/bash
+# Kawaiintu Setup Helper - Remove Parole
+
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+echo -e "\x1b[36;01m             Removing Parole             \x1b[39;49;00m"
+echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
+
+echo ">> Restoring default video player settings..."
+xdg-mime default org.gnome.Totem.desktop video/mp4
+xdg-mime default org.gnome.Totem.desktop video/x-matroska
+xdg-mime default org.gnome.Totem.desktop video/x-msvideo
+xdg-mime default org.gnome.Totem.desktop video/quicktime
+
+echo ">> Purging Parole and cleaning up packages..."
+sudo apt purge -y parole >/dev/null 2>&1
+sudo apt autoremove -y >/dev/null 2>&1
+
+echo ">> Parole has been successfully removed."
+echo ""
+echo -n "Hit Any Key to return to menu: "
+read -r -n 1 -s answer
+echo ""

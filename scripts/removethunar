@@ -2,7 +2,7 @@
 # Kawaiintu Setup Helper - Remove Thunar
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
-echo -e "\x1b[36;01m             Removing Thunar             \x1b[39;49;00m"
+echo -e "\x1b[36;01m              Removing Thunar            \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 # 1. Dock（お気に入り）からの削除とNautilusの復元
@@ -31,30 +31,40 @@ fi
 
 # 2. 実行中のプロセスの強制終了
 echo ">> Terminating running Thunar processes..."
-# 起動していない場合にエラー（no process found）が出ないよう -q オプションを付与
 sudo killall -q thunar >/dev/null 2>&1
 
-# 3. パッケージの完全削除と依存関係の整理
-echo ">> Purging Thunar and cleaning up packages..."
-# 過去のバグ（nemoの巻き添え削除）を修正し、thunar関連のみをパージ
-sudo apt purge -y thunar "thunar*" >/dev/null 2>&1
-sudo apt autoremove -y >/dev/null 2>&1
-
-# 4. ユーザー設定ファイルの削除
-echo ">> Removing user configuration files..."
-rm -rf "$HOME/.config/Thunar"
-# 念のため小文字のディレクトリがあった場合も削除
-rm -rf "$HOME/.config/thunar"
-
-# 5. アプリケーションメニューのアイコン設定（ローカルオーバーライド）の削除
+# 3. アプリケーションメニューのアイコン設定（ローカルオーバーライド）の削除
 echo ">> Removing local menu icon override..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 if [ -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop" ] || [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
-  rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
-  rm -f "$LOCAL_APP_DIR/thunar.desktop"
-  update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1
-  echo ">> Local Thunar menu icon override removed."
+    rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
+    rm -f "$LOCAL_APP_DIR/thunar.desktop"
+    update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
+    echo ">> Local Thunar menu icon override removed."
 fi
+
+# 4. Thunar (XFCE) 固有のターミナル設定のクリーンアップ
+echo ">> Resetting terminal settings for Thunar (XFCE base)..."
+rm -f ~/.config/xfce4/helpers.rc
+rm -f ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
+# 空になったディレクトリを整理
+rmdir ~/.local/share/xfce4/helpers 2>/dev/null || true
+rmdir ~/.config/xfce4 2>/dev/null || true
+
+# 5. ユーザー設定ファイルの削除
+echo ">> Removing user configuration files..."
+rm -rf "$HOME/.config/Thunar"
+rm -rf "$HOME/.config/thunar"
+
+# 6. パッケージの完全削除と依存関係の整理
+echo ">> Purging Thunar and cleaning up packages..."
+# 過去のバグ（nemoの巻き添え削除）を回避し、必要なものだけを明示的にパージ
+sudo apt purge -y thunar thunar-archive-plugin thunar-volman >/dev/null 2>&1
+sudo apt autoremove -y >/dev/null 2>&1
+
+# 7. デフォルトファイルマネージャーの指定をリセット
+# GNOME標準であるNautilusにデフォルトを戻す
+xdg-mime default org.gnome.Nautilus.desktop inode/directory
 
 echo ">> Thunar has been successfully removed."
 echo ""

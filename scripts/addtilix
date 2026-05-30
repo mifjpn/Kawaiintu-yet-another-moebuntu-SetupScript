@@ -15,8 +15,14 @@ sudo apt -y install tilix python3-nautilus
 echo ">> Creating Tilix wrapper for compatibility..."
 cat << 'EOF' | sudo tee /usr/local/bin/tilix-wrapper > /dev/null
 #!/bin/bash
+# Thunarなどのファイラが勝手に付与するターミナル実行オプション（-e, -x）を除外
+if [ "$1" = "-e" ] || [ "$1" = "-x" ]; then
+    shift
+fi
+
 if [ $# -gt 0 ]; then
-    tilix -e bash -c "$* ; exec $SHELL"
+    # 画面を残すロジック（ユーザーのシェルを呼び出して待機）
+    tilix -e bash -c "$* ; echo -e '\n[プロセスが終了しました]'; exec $SHELL"
 else
     tilix
 fi
@@ -25,10 +31,63 @@ EOF
 # 実行権限の付与
 sudo chmod +x /usr/local/bin/tilix-wrapper
 
-# 3. システムのデフォルト端末をラッパーに設定
-echo ">> Setting Tilix as the default terminal..."
+# 3. システムのデフォルト端末をラッパーに設定 (GNOME)
+echo ">> Setting Tilix as the default terminal for GNOME..."
 gsettings set org.gnome.desktop.default-applications.terminal exec '/usr/local/bin/tilix-wrapper'
 gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-e'
+
+# 4. システム標準 (x-terminal-emulator) をラッパーに設定
+echo ">> Setting system alternatives (x-terminal-emulator)..."
+sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/tilix-wrapper 100
+sudo update-alternatives --set x-terminal-emulator /usr/local/bin/tilix-wrapper
+
+# 5. XFCE (Thunar) のヘルパー設定をラッパーに書き換え
+echo ">> Registering to XFCE/Thunar helpers..."
+mkdir -p ~/.config/xfce4
+mkdir -p ~/.local/share/xfce4/helpers
+
+cat << 'EOF' > ~/.config/xfce4/helpers.rc
+TerminalEmulator=custom-TerminalEmulator
+EOF
+
+cat << 'EOF' > ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
+[Desktop Entry]
+NoDisplay=true
+Version=1.0
+Encoding=UTF-8
+Type=X-XFCE-Helper
+X-XFCE-Category=TerminalEmulator
+X-XFCE-CommandsWithParameter=/usr/local/bin/tilix-wrapper -e "%s"
+Icon=tilix
+Name=Custom Tilix Wrapper
+EOF
+
+# 6. Tilixのプロファイル設定（背景の黒固定）
+echo ">> Configuring Tilix profile (Setting black background)..."
+PROFILE_UUID=$(gsettings get com.gexperts.Tilix.ProfilesList default 2>/dev/null | tr -d "'")
+if [ -z "$PROFILE_UUID" ] || [ "$PROFILE_UUID" = "null" ]; then
+    PROFILE_UUID=$(cat /proc/sys/kernel/random/uuid)
+    gsettings set com.gexperts.Tilix.ProfilesList list "['$PROFILE_UUID']" 2>/dev/null || true
+    gsettings set com.gexperts.Tilix.ProfilesList default "'$PROFILE_UUID'" 2>/dev/null || true
+fi
+
+dconf write /com/gexperts/Tilix/profiles/${PROFILE_UUID}/use-theme-colors false
+dconf write /com/gexperts/Tilix/profiles/${PROFILE_UUID}/background-color "'#000000'"
+dconf write /com/gexperts/Tilix/profiles/${PROFILE_UUID}/foreground-color "'#FFFFFF'"
+
+# 7. Dock（お気に入り）のピン留めを標準TerminalからTilixに置き換え
+echo ">> Replacing standard Terminal with Tilix in dock favorites..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+
+if [[ "$FAVORITES" == *"'org.gnome.Terminal.desktop'"* ]]; then
+    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'org.gnome.Terminal.desktop'/'com.gexperts.Tilix.desktop'/g")
+else
+    # Tilixが重複しないよう一旦消去して末尾に追加
+    CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'com.gexperts.Tilix.desktop', //g" -e "s/, 'com.gexperts.Tilix.desktop'//g" -e "s/'com.gexperts.Tilix.desktop'//g")
+    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'com.gexperts.Tilix.desktop'\]/" | sed "s/\[, /\[/")
+fi
+
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 
 echo ">> Tilix has been successfully installed and configured."
 echo ""

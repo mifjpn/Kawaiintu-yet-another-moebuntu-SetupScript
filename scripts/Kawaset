@@ -90,8 +90,8 @@ options=( 'base setting(Do first!)'
           'remove nemo'
           'add thunar'
           'remove thunar'
-          'add vlc(deb)'
-          'remove vlc(deb)'
+          'add parole(動画ソフト)'
+          'remove parole(動画ソフト)'
           'add tilix'
           'remove tilix'
           'add gedit'
@@ -210,12 +210,12 @@ do
       /bin/bash ./removethunar ;
       break
     ;;
-    "add vlc(deb)")
-      /bin/bash ./addvlc;
+    "add parole(動画ソフト)")
+      /bin/bash ./addparole;
       break
     ;;
-    "remove vlc(deb)")
-      /bin/bash ./removevlc ;
+    "remove parole(動画ソフト)")
+      /bin/bash ./removeparole ;
       break
     ;;
     "add tilix")
