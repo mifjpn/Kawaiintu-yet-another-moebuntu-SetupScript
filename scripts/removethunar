@@ -5,35 +5,36 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m              Removing Thunar            \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Dock（お気に入り）からの削除とNautilusの復元
+# 1. Remove from Dock and restore Nautilus
 echo ">> Removing Thunar and restoring Nautilus to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-# Thunar関連の登録を完全に消去
-CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
-                                          -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
-
-# Nautilusが現在Dockにない場合のみ、2番目に復元する
-if [[ "$CLEAN_FAVORITES" != *"'org.gnome.Nautilus.desktop'"* ]]; then
-    # 配列の2番目に Nautilus を挿入
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'org.gnome.Nautilus.desktop', /")
-    
-    # フォールバック
-    if [[ "$NEW_FAVORITES" == "$CLEAN_FAVORITES" ]]; then
-        NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Nautilus.desktop'\]/" | sed "s/\[, /\[/")
-    fi
-    
-    gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-    echo ">> Nautilus has been restored to favorites."
+if [[ "$FAVORITES" == *"'thunar.desktop'"* ]]; then
+    # Replace Thunar directly with Nautilus in its current position
+    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'thunar.desktop'/'org.gnome.Nautilus.desktop'/g")
+    # Clean up legacy kawaiintu-thunar just in case
+    NEW_FAVORITES=$(echo "$NEW_FAVORITES" | sed -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g")
 else
-    gsettings set org.gnome.shell favorite-apps "$CLEAN_FAVORITES"
+    # Remove any Thunar fragments completely
+    CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
+                                              -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
+    
+    # If Nautilus is missing entirely, append it to the end
+    if [[ "$CLEAN_FAVORITES" != *"'org.gnome.Nautilus.desktop'"* ]]; then
+        NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Nautilus.desktop'\]/" | sed "s/\[, /\[/")
+    else
+        NEW_FAVORITES="$CLEAN_FAVORITES"
+    fi
 fi
 
-# 2. 実行中のプロセスの強制終了
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+echo ">> Nautilus has been restored to favorites."
+
+# 2. Terminate running Thunar processes
 echo ">> Terminating running Thunar processes..."
 sudo killall -q thunar >/dev/null 2>&1
 
-# 3. アプリケーションメニューのアイコン設定（ローカルオーバーライド）の削除
+# 3. Remove local menu icon override
 echo ">> Removing local menu icon override..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 if [ -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop" ] || [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
@@ -43,27 +44,26 @@ if [ -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop" ] || [ -f "$LOCAL_APP_DIR/thun
     echo ">> Local Thunar menu icon override removed."
 fi
 
-# 4. Thunar (XFCE) 固有のターミナル設定のクリーンアップ
+# 4. Clean up XFCE terminal helper settings
 echo ">> Resetting terminal settings for Thunar (XFCE base)..."
 rm -f ~/.config/xfce4/helpers.rc
 rm -f ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
-# 空になったディレクトリを整理
+# Remove empty directories
 rmdir ~/.local/share/xfce4/helpers 2>/dev/null || true
 rmdir ~/.config/xfce4 2>/dev/null || true
 
-# 5. ユーザー設定ファイルの削除
+# 5. Remove user configuration files
 echo ">> Removing user configuration files..."
 rm -rf "$HOME/.config/Thunar"
 rm -rf "$HOME/.config/thunar"
 
-# 6. パッケージの完全削除と依存関係の整理
+# 6. Purge packages and clean dependencies
 echo ">> Purging Thunar and cleaning up packages..."
-# 過去のバグ（nemoの巻き添え削除）を回避し、必要なものだけを明示的にパージ
+# Explicitly purge only Thunar components to avoid collateral damage to Nemo
 sudo apt purge -y thunar thunar-archive-plugin thunar-volman >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1
 
-# 7. デフォルトファイルマネージャーの指定をリセット
-# GNOME標準であるNautilusにデフォルトを戻す
+# 7. Reset default file manager to Nautilus (GNOME standard)
 xdg-mime default org.gnome.Nautilus.desktop inode/directory
 
 echo ">> Thunar has been successfully removed."

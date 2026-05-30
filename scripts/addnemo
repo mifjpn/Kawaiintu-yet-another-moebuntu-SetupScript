@@ -5,30 +5,28 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Nemo                 \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. aptでのインストール
-echo ">> Update apt and install nemo..."
+# 1. Install via apt
+echo ">> Updating apt and installing nemo..."
 sudo apt update >/dev/null 2>&1
 sudo apt -y install nemo
 
-# 2. Dock（お気に入り）への追加（Nautilusを削除してNemoを挿入）
+# 2. Add to Dock (Favorites) - Firefox Safe Logic
 echo ">> Replacing Nautilus with Nemo in dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-# 一旦Nautilusと既存のNemoの登録を完全に消去して綺麗にする
-CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop', //g" -e "s/, 'org.gnome.Nautilus.desktop'//g" -e "s/'org.gnome.Nautilus.desktop'//g" \
-                                          -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
+# Remove existing Nemo icons to prevent duplicates
+CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
 
-# 配列の2番目（最初のアイテムの直後）にnemo.desktopを安全に挿入
-# 最初のアイテム（['item1.desktop', ）にマッチさせ、その後ろに Nemo を追加します
-NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'nemo.desktop', /")
-
-# もしDockが空、または1つしかアイテムがない場合のフォールバック（一番後ろに追加）
-if [[ "$NEW_FAVORITES" == "$CLEAN_FAVORITES" ]]; then
+if [[ "$CLEAN_FAVORITES" == *"'org.gnome.Nautilus.desktop'"* ]]; then
+    # If Nautilus exists, replace it directly in its current position
+    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/'org.gnome.Nautilus.desktop'/'nemo.desktop'/g")
+else
+    # If Nautilus is not found, append Nemo to the end
     NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'nemo.desktop'\]/" | sed "s/\[, /\[/")
 fi
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-echo ">> Done. Nautilus removed and Nemo added to favorites."
+echo ">> Done. Nautilus replaced by Nemo in favorites."
 
 echo ""
 echo -n "Hit Any Key to return to menu: "

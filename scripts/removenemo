@@ -5,30 +5,29 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m              Removing Nemo              \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Dock（お気に入り）からの削除とNautilusの復元
+# 1. Remove from Dock and restore Nautilus
 echo ">> Removing Nemo and restoring Nautilus to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-# Nemoの登録を消去
-CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
-
-# Nautilusが現在Dockにない場合のみ、2番目に復元する
-if [[ "$CLEAN_FAVORITES" != *"'org.gnome.Nautilus.desktop'"* ]]; then
-    # 配列の2番目に Nautilus を挿入
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'org.gnome.Nautilus.desktop', /")
-    
-    # フォールバック（Dockのアイテムが少ない場合）
-    if [[ "$NEW_FAVORITES" == "$CLEAN_FAVORITES" ]]; then
-        NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Nautilus.desktop'\]/" | sed "s/\[, /\[/")
-    fi
-    
-    gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-    echo ">> Nautilus has been restored to favorites."
+if [[ "$FAVORITES" == *"'nemo.desktop'"* ]]; then
+    # Replace Nemo directly with Nautilus in its current position
+    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'nemo.desktop'/'org.gnome.Nautilus.desktop'/g")
 else
-    gsettings set org.gnome.shell favorite-apps "$CLEAN_FAVORITES"
+    # Remove any Nemo fragments completely
+    CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
+    
+    # If Nautilus is missing entirely, append it to the end
+    if [[ "$CLEAN_FAVORITES" != *"'org.gnome.Nautilus.desktop'"* ]]; then
+        NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Nautilus.desktop'\]/" | sed "s/\[, /\[/")
+    else
+        NEW_FAVORITES="$CLEAN_FAVORITES"
+    fi
 fi
 
-# 2. Nemoの完全削除（パージ）と不要パッケージの自動削除
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+echo ">> Nautilus has been restored to favorites."
+
+# 2. Purge Nemo and clean up dependencies
 echo ">> Purging Nemo and cleaning up dependencies..."
 sudo apt purge -y nemo >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1

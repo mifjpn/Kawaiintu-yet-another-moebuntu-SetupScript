@@ -38,23 +38,25 @@ if [ -f /usr/share/applications/thunar.desktop ]; then
 fi
 
 # ---------------------------------------------------------
-# 3. Add to Dock (Favorites)
+# 3. Add to Dock (Favorites) - Firefox Safe Logic
 # ---------------------------------------------------------
 echo ">> Replacing Nautilus with Thunar in dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Nautilus.desktop', //g" -e "s/, 'org.gnome.Nautilus.desktop'//g" -e "s/'org.gnome.Nautilus.desktop'//g" \
-                                          -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
+# Remove existing Thunar or legacy icons to prevent duplicates
+CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
                                           -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
 
-NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed -E "s/(\['[^']+', )/\1'thunar.desktop', /")
-
-if [[ "$NEW_FAVORITES" == "$CLEAN_FAVORITES" ]]; then
+if [[ "$CLEAN_FAVORITES" == *"'org.gnome.Nautilus.desktop'"* ]]; then
+    # If Nautilus exists, replace it directly in its current position
+    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/'org.gnome.Nautilus.desktop'/'thunar.desktop'/g")
+else
+    # If Nautilus is not found, append Thunar to the end
     NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'thunar.desktop'\]/" | sed "s/\[, /\[/")
 fi
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-echo ">> Done. Nautilus removed and Thunar added to favorites."
+echo ">> Done. Nautilus replaced by Thunar in favorites."
 
 # ---------------------------------------------------------
 # 4. Configure Thunar (XFCE) terminal call setting (Tilix wrapper support)
@@ -86,9 +88,9 @@ Name=Custom Terminal Wrapper
 EOF
 
 # ---------------------------------------------------------
-# 5. Inject direct compression to Thunar custom actions (uca.xml)
+# 5. Inject custom actions (Compression & Tilix) to Thunar
 # ---------------------------------------------------------
-echo ">> Injecting direct compression actions to Thunar (uca.xml)..."
+echo ">> Injecting custom actions to Thunar (uca.xml)..."
 UCA_DIR="$HOME/.config/Thunar"
 UCA_FILE="$UCA_DIR/uca.xml"
 
@@ -101,6 +103,25 @@ if [ ! -f "$UCA_FILE" ]; then
     else
         echo '<?xml encoding="UTF-8" version="1.0"?><actions></actions>' > "$UCA_FILE"
     fi
+fi
+
+# Append Open in Tilix action if not already registered
+if ! grep -q "kawaiintu-tilix-here" "$UCA_FILE"; then
+    cat << 'EOF' > /tmp/thunar-tilix.xml
+<action>
+    <icon>tilix</icon>
+    <name>Open in Tilix</name>
+    <unique-id>kawaiintu-tilix-here</unique-id>
+    <command>/usr/local/bin/tilix-wrapper "%f"</command>
+    <description>Open Tilix terminal here</description>
+    <patterns>*</patterns>
+    <startup-notify/>
+    <directories/>
+</action>
+EOF
+    cp "$UCA_FILE" "${UCA_FILE}.bak"
+    awk '/<\/actions>/{system("cat /tmp/thunar-tilix.xml")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
+    rm -f /tmp/thunar-tilix.xml
 fi
 
 # Append ZIP and tar.xz actions if not already registered
@@ -149,7 +170,7 @@ xdg-mime default thunar.desktop inode/directory
 mkdir -p ~/Templates 2>/dev/null
 touch ~/Templates/"Text File.txt" 2>/dev/null
 
-echo ">> Thunar setup is fully completed (with Compression Actions)."
+echo ">> Thunar setup is fully completed (with Custom Actions)."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer
