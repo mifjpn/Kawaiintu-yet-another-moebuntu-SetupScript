@@ -10,24 +10,58 @@ echo ">> Updating apt and installing nemo..."
 sudo apt update >/dev/null 2>&1
 sudo apt -y install nemo
 
-# 2. Add to Dock (Favorites) - Firefox Safe Logic
-echo ">> Replacing Nautilus with Nemo in dock favorites..."
+# ---------------------------------------------------------
+# 2. Add to Dock (Favorites) - Python Safe Array Injection
+# ---------------------------------------------------------
+echo ">> Replacing Nautilus and setting Nemo to the 2nd position in dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-# Remove existing Nemo icons to prevent duplicates
-CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
-
-if [[ "$CLEAN_FAVORITES" == *"'org.gnome.Nautilus.desktop'"* ]]; then
-    # If Nautilus exists, replace it directly in its current position
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/'org.gnome.Nautilus.desktop'/'nemo.desktop'/g")
-else
-    # If Nautilus is not found, append Nemo to the end
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'nemo.desktop'\]/" | sed "s/\[, /\[/")
-fi
+NEW_FAVORITES=$(python3 -c "
+import sys, ast
+raw = sys.argv[1].replace('@as ', '').strip()
+try:
+    favs = ast.literal_eval(raw)
+    if not isinstance(favs, list):
+        favs = []
+    
+    # Remove Nautilus and any existing Nemo entries
+    excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop']
+    favs = [x for x in favs if x not in excludes]
+    
+    # Insert Nemo strictly at the 2nd position (Index 1)
+    favs.insert(1, 'nemo.desktop')
+    
+    # Format output for gsettings
+    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
+except Exception:
+    print(\"['nemo.desktop']\")
+" "$FAVORITES")
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-echo ">> Done. Nautilus replaced by Nemo in favorites."
+echo ">> Done. Nemo is now placed at the 2nd position in favorites."
 
+# ---------------------------------------------------------
+# 3. Fix Nemo Terminal Execution (Cinnamon Native Integration)
+# ---------------------------------------------------------
+echo ">> Configuring native terminal settings for Nemo (Cinnamon base)..."
+if [ -f /usr/local/bin/tilix-wrapper ]; then
+    NEMO_TERM="/usr/local/bin/tilix-wrapper"
+else
+    NEMO_TERM="x-terminal-emulator"
+fi
+
+# Set Cinnamon's gsettings so Nemo's native "Open in Terminal" works flawlessly
+gsettings set org.cinnamon.desktop.default-applications.terminal exec "$NEMO_TERM" 2>/dev/null || true
+gsettings set org.cinnamon.desktop.default-applications.terminal exec-arg "-e" 2>/dev/null || true
+
+# ---------------------------------------------------------
+# 4. Set as default file manager & Create dummy templates
+# ---------------------------------------------------------
+xdg-mime default nemo.desktop inode/directory
+mkdir -p ~/Templates 2>/dev/null
+touch ~/Templates/"Text File.txt" 2>/dev/null
+
+echo ">> Nemo setup is fully completed."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer

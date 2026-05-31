@@ -5,32 +5,59 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m              Removing Nemo              \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Remove from Dock and restore Nautilus
+# 1. Remove from Dock and restore Nautilus (Python Safe Array Manipulation)
 echo ">> Removing Nemo and restoring Nautilus to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-if [[ "$FAVORITES" == *"'nemo.desktop'"* ]]; then
-    # Replace Nemo directly with Nautilus in its current position
-    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'nemo.desktop'/'org.gnome.Nautilus.desktop'/g")
-else
-    # Remove any Nemo fragments completely
-    CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'nemo.desktop', //g" -e "s/, 'nemo.desktop'//g" -e "s/'nemo.desktop'//g")
+NEW_FAVORITES=$(python3 -c "
+import sys, ast
+raw = sys.argv[1].replace('@as ', '').strip()
+try:
+    favs = ast.literal_eval(raw)
+    if not isinstance(favs, list):
+        favs = []
     
-    # If Nautilus is missing entirely, append it to the end
-    if [[ "$CLEAN_FAVORITES" != *"'org.gnome.Nautilus.desktop'"* ]]; then
-        NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Nautilus.desktop'\]/" | sed "s/\[, /\[/")
-    else
-        NEW_FAVORITES="$CLEAN_FAVORITES"
-    fi
-fi
+    # Find the current position of Nemo before removing it
+    insert_idx = -1
+    for i, app in enumerate(favs):
+        if app == 'nemo.desktop':
+            insert_idx = i
+            break
+            
+    # Remove Nemo
+    favs = [x for x in favs if x != 'nemo.desktop']
+    
+    # Restore Nautilus if it is missing
+    if 'org.gnome.Nautilus.desktop' not in favs:
+        if insert_idx != -1:
+            # Insert Nautilus exactly where Nemo used to be
+            favs.insert(insert_idx, 'org.gnome.Nautilus.desktop')
+        else:
+            # If Nemo wasn't in the dock either, append Nautilus to the end
+            favs.append('org.gnome.Nautilus.desktop')
+            
+    # Format output for gsettings
+    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
+except Exception:
+    # Fallback in case of an unexpected parsing error
+    print(\"['org.gnome.Nautilus.desktop']\")
+" "$FAVORITES")
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Nautilus has been restored to favorites."
 
-# 2. Purge Nemo and clean up dependencies
+# 2. Reset Cinnamon terminal settings (Clean up native integration)
+echo ">> Resetting Cinnamon terminal settings..."
+gsettings reset org.cinnamon.desktop.default-applications.terminal exec 2>/dev/null || true
+gsettings reset org.cinnamon.desktop.default-applications.terminal exec-arg 2>/dev/null || true
+
+# 3. Purge Nemo and clean up dependencies
 echo ">> Purging Nemo and cleaning up dependencies..."
 sudo apt purge -y nemo >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1
+
+# 4. Reset default file manager to Nautilus (GNOME standard)
+xdg-mime default org.gnome.Nautilus.desktop inode/directory
 
 echo ">> Nemo has been successfully removed."
 echo ""

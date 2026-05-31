@@ -2,49 +2,76 @@
 # Kawaiintu Setup Helper - Remove Tilix
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
-echo -e "\x1b[36;01m             Removing Tilix              \x1b[39;49;00m"
+echo -e "\x1b[36;01m              Removing Tilix             \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. 【GNOME】デフォルト端末設定を標準（デフォルト）にリセット
+# 1. Restore GNOME default terminal settings
 echo ">> Restoring system default terminal settings (GNOME)..."
 gsettings reset org.gnome.desktop.default-applications.terminal exec
 gsettings reset org.gnome.desktop.default-applications.terminal exec-arg
 
-# 2. 【Debian】x-terminal-emulator の上書きを解除
+# 2. Restore x-terminal-emulator alternatives
 echo ">> Restoring system alternatives (x-terminal-emulator)..."
 sudo update-alternatives --remove x-terminal-emulator /usr/local/bin/tilix-wrapper >/dev/null 2>&1
 sudo update-alternatives --auto x-terminal-emulator >/dev/null 2>&1
 
-# 3. 【XFCE/Thunar】独自ヘルパー設定の削除
+# 3. Remove XFCE/Thunar terminal helper settings
 echo ">> Removing XFCE/Thunar terminal helper settings..."
 rm -f ~/.config/xfce4/helpers.rc
 rm -f ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
-# 空になったディレクトリを整理
+# Clean up empty directories
 rmdir ~/.local/share/xfce4/helpers 2>/dev/null || true
 rmdir ~/.config/xfce4 2>/dev/null || true
 
-# 4. 【Tilix設定】dconfのTilix関連設定をリセット（プロファイル・背景色など）
+# 4. Reset Tilix dconf settings (profiles, background color, etc.)
 echo ">> Resetting Tilix dconf settings..."
 dconf reset -f /com/gexperts/Tilix/ 2>/dev/null || true
 
-# 5. 【Dock】DockからTilixを削除し、標準Terminalを復元
+# 5. Remove Tilix from Dock and restore standard Terminal (Python Safe Array Manipulation)
 echo ">> Restoring standard Terminal to dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-if [[ "$FAVORITES" == *"'com.gexperts.Tilix.desktop'"* ]]; then
-    NEW_FAVORITES=$(echo "$FAVORITES" | sed "s/'com.gexperts.Tilix.desktop'/'org.gnome.Terminal.desktop'/g")
-else
-    # Tilixが見つからない場合のフォールバック（標準Terminalを末尾に確実に追加）
-    CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'org.gnome.Terminal.desktop', //g" -e "s/, 'org.gnome.Terminal.desktop'//g" -e "s/'org.gnome.Terminal.desktop'//g")
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'org.gnome.Terminal.desktop'\]/" | sed "s/\[, /\[/")
-fi
+NEW_FAVORITES=$(python3 -c "
+import sys, ast
+raw = sys.argv[1].replace('@as ', '').strip()
+try:
+    favs = ast.literal_eval(raw)
+    if not isinstance(favs, list):
+        favs = []
+    
+    # Find the current position of Tilix before removing it
+    insert_idx = -1
+    for i, app in enumerate(favs):
+        if app == 'com.gexperts.Tilix.desktop':
+            insert_idx = i
+            break
+            
+    # Remove Tilix
+    favs = [x for x in favs if x != 'com.gexperts.Tilix.desktop']
+    
+    # Restore GNOME Terminal if it is missing
+    if 'org.gnome.Terminal.desktop' not in favs:
+        if insert_idx != -1:
+            # Insert Terminal exactly where Tilix used to be
+            favs.insert(insert_idx, 'org.gnome.Terminal.desktop')
+        else:
+            # If Tilix wasn't in the dock either, append Terminal to the end
+            favs.append('org.gnome.Terminal.desktop')
+            
+    # Format output for gsettings
+    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
+except Exception:
+    # Fallback in case of an unexpected parsing error
+    print(\"['org.gnome.Terminal.desktop']\")
+" "$FAVORITES")
+
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 
-# 6. ラッパースクリプトの削除
+# 6. Remove Tilix wrapper script
 echo ">> Removing Tilix wrapper..."
 sudo rm -f /usr/local/bin/tilix-wrapper
 
-# 7. Tilixの完全削除
+# 7. Purge Tilix and clean up dependencies
 echo ">> Purging Tilix and cleaning up dependencies..."
 sudo apt purge -y tilix >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1

@@ -5,11 +5,11 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Thunar               \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Install via apt (along with compression/extraction tools)
+# 1. Install via apt (along with compression/extraction tools and XFCE terminal bridge)
 echo ">> Updating apt and installing Thunar & Archive tools..."
 sudo apt update >/dev/null 2>&1
-# Add zenity for one-click compression and file-roller as standard extractor
-sudo apt -y install thunar thunar-archive-plugin thunar-volman file-roller zip unzip xz-utils zenity
+# exo-utils is required for Thunar's native terminal caller (exo-open) to work on Ubuntu
+sudo apt -y install thunar thunar-archive-plugin thunar-volman file-roller zip unzip xz-utils zenity exo-utils
 
 # ---------------------------------------------------------
 # 2. Fix Thunar icon (Overwrite completely in ~/.local)
@@ -38,28 +38,38 @@ if [ -f /usr/share/applications/thunar.desktop ]; then
 fi
 
 # ---------------------------------------------------------
-# 3. Add to Dock (Favorites) - Firefox Safe Logic
+# 3. Add to Dock (Favorites) - Python Safe Array Injection
 # ---------------------------------------------------------
-echo ">> Replacing Nautilus with Thunar in dock favorites..."
+echo ">> Replacing Nautilus and setting Thunar to the 2nd position in dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 
-# Remove existing Thunar or legacy icons to prevent duplicates
-CLEAN_FAVORITES=$(echo "$FAVORITES" | sed -e "s/'kawaiintu-thunar.desktop', //g" -e "s/, 'kawaiintu-thunar.desktop'//g" -e "s/'kawaiintu-thunar.desktop'//g" \
-                                          -e "s/'thunar.desktop', //g" -e "s/, 'thunar.desktop'//g" -e "s/'thunar.desktop'//g")
-
-if [[ "$CLEAN_FAVORITES" == *"'org.gnome.Nautilus.desktop'"* ]]; then
-    # If Nautilus exists, replace it directly in its current position
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/'org.gnome.Nautilus.desktop'/'thunar.desktop'/g")
-else
-    # If Nautilus is not found, append Thunar to the end
-    NEW_FAVORITES=$(echo "$CLEAN_FAVORITES" | sed "s/\]/, 'thunar.desktop'\]/" | sed "s/\[, /\[/")
-fi
+# Use Python to safely manipulate the array and place Thunar at Index 1 (2nd position)
+NEW_FAVORITES=$(python3 -c "
+import sys, ast
+raw = sys.argv[1].replace('@as ', '').strip()
+try:
+    favs = ast.literal_eval(raw)
+    if not isinstance(favs, list):
+        favs = []
+    
+    # Remove Nautilus and any existing Thunar entries
+    excludes = ['org.gnome.Nautilus.desktop', 'kawaiintu-thunar.desktop', 'thunar.desktop']
+    favs = [x for x in favs if x not in excludes]
+    
+    # Insert Thunar strictly at the 2nd position (Index 1)
+    favs.insert(1, 'thunar.desktop')
+    
+    # Format output for gsettings
+    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
+except Exception:
+    print(\"['thunar.desktop']\")
+" "$FAVORITES")
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-echo ">> Done. Nautilus replaced by Thunar in favorites."
+echo ">> Done. Thunar is now placed at the 2nd position in favorites."
 
 # ---------------------------------------------------------
-# 4. Configure Thunar (XFCE) terminal call setting (Tilix wrapper support)
+# 4. Configure Thunar (XFCE) terminal call setting
 # ---------------------------------------------------------
 echo ">> Configuring terminal settings for Thunar (XFCE base)..."
 mkdir -p ~/.config/xfce4
@@ -75,6 +85,7 @@ else
     WRAPPER_PATH="x-terminal-emulator"
 fi
 
+# Use native exo-open integration. It will handle 'cd' internally and call Commands.
 cat << EOF > ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
 [Desktop Entry]
 NoDisplay=true
@@ -82,13 +93,14 @@ Version=1.0
 Encoding=UTF-8
 Type=X-XFCE-Helper
 X-XFCE-Category=TerminalEmulator
+X-XFCE-Commands=$WRAPPER_PATH
 X-XFCE-CommandsWithParameter=$WRAPPER_PATH -e "%s"
 Icon=tilix
 Name=Custom Terminal Wrapper
 EOF
 
 # ---------------------------------------------------------
-# 5. Inject custom actions (Compression & Tilix) to Thunar
+# 5. Inject custom actions (Compression) & Cleanup old actions
 # ---------------------------------------------------------
 echo ">> Injecting custom actions to Thunar (uca.xml)..."
 UCA_DIR="$HOME/.config/Thunar"
@@ -105,24 +117,27 @@ if [ ! -f "$UCA_FILE" ]; then
     fi
 fi
 
-# Append Open in Tilix action if not already registered
-if ! grep -q "kawaiintu-tilix-here" "$UCA_FILE"; then
-    cat << 'EOF' > /tmp/thunar-tilix.xml
-<action>
-    <icon>tilix</icon>
-    <name>Open in Tilix</name>
-    <unique-id>kawaiintu-tilix-here</unique-id>
-    <command>/usr/local/bin/tilix-wrapper "%f"</command>
-    <description>Open Tilix terminal here</description>
-    <patterns>*</patterns>
-    <startup-notify/>
-    <directories/>
-</action>
-EOF
-    cp "$UCA_FILE" "${UCA_FILE}.bak"
-    awk '/<\/actions>/{system("cat /tmp/thunar-tilix.xml")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
-    rm -f /tmp/thunar-tilix.xml
-fi
+# Clean up the broken 'kawaiintu-tilix-here' if it was added previously
+python3 -c "
+import xml.etree.ElementTree as ET
+import os
+
+xml_file = os.path.expanduser('~/.config/Thunar/uca.xml')
+if os.path.exists(xml_file):
+    try:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+        changed = False
+        for action in root.findall('action'):
+            uid = action.find('unique-id')
+            if uid is not None and uid.text == 'kawaiintu-tilix-here':
+                root.remove(action)
+                changed = True
+        if changed:
+            tree.write(xml_file, encoding='UTF-8', xml_declaration=True)
+    except Exception:
+        pass
+"
 
 # Append ZIP and tar.xz actions if not already registered
 if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
@@ -160,6 +175,9 @@ EOF
     awk '/<\/actions>/{system("cat /tmp/thunar-compress.xml")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
     rm -f /tmp/thunar-compress.xml
 fi
+
+# Restart Thunar quietly to apply changes immediately
+killall thunar 2>/dev/null || true
 
 # ---------------------------------------------------------
 # 6. Set as default file manager & Create dummy templates
