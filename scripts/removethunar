@@ -5,43 +5,43 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m              Removing Thunar            \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Remove from Dock and restore Nautilus (Python Safe Array Manipulation)
+# 1. Remove from Dock and restore Nautilus (Bulletproof Regex Injection)
 echo ">> Removing Thunar and restoring Nautilus to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+export FAVORITES
 
-NEW_FAVORITES=$(python3 -c "
-import sys, ast
-raw = sys.argv[1].replace('@as ', '').strip()
-try:
-    favs = ast.literal_eval(raw)
-    if not isinstance(favs, list):
-        favs = []
-    
-    # Find the current position of Thunar before removing it
-    insert_idx = -1
-    for i, app in enumerate(favs):
-        if app in ['thunar.desktop', 'kawaiintu-thunar.desktop']:
-            insert_idx = i
-            break
-            
-    # Remove all Thunar fragments
-    favs = [x for x in favs if x not in ['thunar.desktop', 'kawaiintu-thunar.desktop']]
-    
-    # Restore Nautilus if it is missing
-    if 'org.gnome.Nautilus.desktop' not in favs:
-        if insert_idx != -1:
-            # Insert Nautilus exactly where Thunar used to be
-            favs.insert(insert_idx, 'org.gnome.Nautilus.desktop')
-        else:
-            # If Thunar wasn't in the dock either, append Nautilus to the end
-            favs.append('org.gnome.Nautilus.desktop')
-            
-    # Format output for gsettings
-    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
-except Exception:
-    # Fallback in case of an unexpected parsing error
-    print(\"['org.gnome.Nautilus.desktop']\")
-" "$FAVORITES")
+NEW_FAVORITES=$(python3 << 'EOF'
+import os, re
+
+# Safely get the raw string via environment variable
+raw = os.environ.get('FAVORITES', '')
+
+# Extract all desktop files perfectly regardless of formatting
+favs = re.findall(r"'([^']+)'", raw)
+
+# Find the current position of Thunar before removing it
+insert_idx = -1
+for i, app in enumerate(favs):
+    if app in ['thunar.desktop', 'kawaiintu-thunar.desktop']:
+        insert_idx = i
+        break
+
+# Remove all Thunar fragments
+favs = [x for x in favs if x not in ['thunar.desktop', 'kawaiintu-thunar.desktop']]
+
+# Restore Nautilus if it is missing
+if 'org.gnome.Nautilus.desktop' not in favs:
+    if insert_idx != -1:
+        # Insert Nautilus exactly where Thunar used to be
+        favs.insert(insert_idx, 'org.gnome.Nautilus.desktop')
+    else:
+        # If Thunar wasn't in the dock either, append Nautilus to the end
+        favs.append('org.gnome.Nautilus.desktop')
+
+# Format output for gsettings
+print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
+EOF
+)
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Nautilus has been restored to favorites."

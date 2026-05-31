@@ -11,34 +11,46 @@ sudo apt update >/dev/null 2>&1
 sudo apt -y install nemo
 
 # ---------------------------------------------------------
-# 2. Add to Dock (Favorites) - Python Safe Array Injection
+# 2. Add to Dock (Favorites) - Bulletproof Regex Injection
 # ---------------------------------------------------------
-echo ">> Replacing Nautilus and setting Nemo to the 2nd position in dock..."
+echo ">> Replacing Nautilus and setting Nemo strictly below Firefox..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+export FAVORITES
 
-NEW_FAVORITES=$(python3 -c "
-import sys, ast
-raw = sys.argv[1].replace('@as ', '').strip()
-try:
-    favs = ast.literal_eval(raw)
-    if not isinstance(favs, list):
-        favs = []
-    
-    # Remove Nautilus and any existing Nemo entries
-    excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop']
-    favs = [x for x in favs if x not in excludes]
-    
-    # Insert Nemo strictly at the 2nd position (Index 1)
+# Use a Python heredoc with regex to completely avoid string parsing errors
+NEW_FAVORITES=$(python3 << 'EOF'
+import os, re
+
+# Safely get the raw string via environment variable
+raw = os.environ.get('FAVORITES', '')
+
+# Extract all desktop files perfectly regardless of formatting
+favs = re.findall(r"'([^']+)'", raw)
+
+# Remove Nautilus and any existing Nemo entries
+excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop']
+favs = [x for x in favs if x not in excludes]
+
+# Find Firefox (whether Snap or Deb) and insert Nemo exactly after it
+ff_idx = -1
+for i, app in enumerate(favs):
+    if app in ['firefox.desktop', 'firefox_firefox.desktop']:
+        ff_idx = i
+        break
+
+if ff_idx != -1:
+    favs.insert(ff_idx + 1, 'nemo.desktop')
+else:
+    # Fallback: force to 2nd position if Firefox is missing entirely
     favs.insert(1, 'nemo.desktop')
-    
-    # Format output for gsettings
-    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
-except Exception:
-    print(\"['nemo.desktop']\")
-" "$FAVORITES")
+
+# Format output for gsettings
+print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
+EOF
+)
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-echo ">> Done. Nemo is now placed at the 2nd position in favorites."
+echo ">> Done. Nemo is now placed correctly in favorites."
 
 # ---------------------------------------------------------
 # 3. Fix Nemo Terminal Execution (Cinnamon Native Integration)
