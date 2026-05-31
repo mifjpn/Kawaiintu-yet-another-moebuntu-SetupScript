@@ -3,16 +3,16 @@
 
 SOUND_URL="$1"
 
-# 引数が空だった場合のエラーハンドリング
+# Error handling for empty arguments
 if [ -z "$SOUND_URL" ]; then
   echo ">> Error: No sound URL provided."
   echo ">> Usage: $0 <SoundThemeURL>"
   exit 1
 fi
 
-# URLからファイル名（例: Moesound_maid_iori.tar.gz）を取得
+# Get filename from URL (e.g., Moesound_maid_iori.tar.gz)
 SOUND_ARCHIVE=$(basename "$SOUND_URL")
-# 最初の「.」より前の文字列をテーマ名（フォルダ名）として抽出
+# Extract string before the first "." as the theme name (folder name)
 SOUND_THEME_NAME="${SOUND_ARCHIVE%%.*}"
 TEMP_DIR="Kawaiintu.sound.temp"
 
@@ -20,32 +20,32 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m       Installing Kawaiintu Sound        \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. curlのインストール確認
+# 1. Check curl installation
 if ! dpkg -s curl >/dev/null 2>&1; then
   echo ">> Installing curl..."
   sudo apt update >/dev/null 2>&1
   sudo apt install -y curl >/dev/null 2>&1
 fi
 
-# 2. 一時ディレクトリの作成とダウンロード
+# 2. Create temporary directory and download
 echo ">> Creating temporary directory ($TEMP_DIR)..."
 mkdir -p "$TEMP_DIR"
 
 echo ">> Downloading $SOUND_ARCHIVE..."
 curl -L "$SOUND_URL" --output "$TEMP_DIR/$SOUND_ARCHIVE" >/dev/null 2>&1
 
-# 3. 解凍処理（.tar.gzでも.tar.xzでも自動で判別する -xf を使用）
+# 3. Extraction process (use -xf to auto-detect .tar.gz or .tar.xz)
 echo ">> Extracting archive..."
 tar -xf "$TEMP_DIR/$SOUND_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
 
-# 4. システムへの配置と設定
+# 4. Placement and configuration in the system
 echo ">> Copying to system sound directory..."
 sudo cp -R "$TEMP_DIR/$SOUND_THEME_NAME" /usr/share/sounds/
 
 echo ">> Setting sound theme to $SOUND_THEME_NAME..."
 gsettings set org.gnome.desktop.sound theme-name "$SOUND_THEME_NAME"
 
-# 5. クリーンアップ
+# 5. Clean up
 echo ">> Cleaning up temporary files..."
 rm -rf "$TEMP_DIR"
 

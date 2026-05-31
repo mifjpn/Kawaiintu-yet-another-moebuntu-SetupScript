@@ -5,16 +5,16 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m             Removing Gedit              \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. デフォルト設定の復元 (Ubuntu標準の gnome-text-editor に戻す)
+# 1. Restore default settings (Revert to Ubuntu standard gnome-text-editor)
 echo ">> Restoring default text editor (gnome-text-editor)..."
 
-# GUIのデフォルトを復元
+# Restore GUI default
 xdg-mime default org.gnome.TextEditor.desktop text/plain
 
-# CLIのデフォルトを自動選択（標準）に戻す
+# Revert CLI default to auto-selection (standard)
 sudo update-alternatives --auto editor >/dev/null 2>&1 || true
 
-# 2. Geditの完全削除
+# 2. Completely remove Gedit
 echo ">> Purging Gedit and cleaning up dependencies..."
 sudo apt purge -y gedit >/dev/null 2>&1
 sudo apt autoremove -y >/dev/null 2>&1

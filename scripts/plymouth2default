@@ -2,7 +2,7 @@
 # Kawaiintu Setup Helper - Restore Default Plymouth Wrapper
 
 # ==== Variables ====
-# 正しいリポジトリURLに修正
+# Corrected to proper repository URL
 BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
 PLYMOUTH_URL="${BASE_URL}/plymouth/${PLYMOUTH_ARCHIVE}"
@@ -22,7 +22,7 @@ echo ">> Extracting archive..."
 tar -Jxf "$TEMP_DIR/$PLYMOUTH_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
 
 echo ">> Executing uninstall.sh (Administrator privileges required)..."
-# findコマンドでuninstall.shを動的に探して実行する
+# Dynamically find and execute uninstall.sh using find command
 UNINSTALL_SCRIPT=$(find "$TEMP_DIR" -name "uninstall.sh" | head -n 1)
 
 if [ -f "$UNINSTALL_SCRIPT" ]; then

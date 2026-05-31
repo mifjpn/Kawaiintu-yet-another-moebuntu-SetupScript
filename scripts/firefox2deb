@@ -5,13 +5,13 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m    Converting Firefox from Snap to Deb  \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Dock（お気に入り）からの削除
+# 1. Remove from Dock (Favorites)
 echo ">> Removing Firefox from dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 FAVORITES=$(echo "$FAVORITES" | sed -e "s/'firefox.desktop', //g" -e "s/'firefox_firefox.desktop', //g" -e "s/'firefox.desktop'//g" -e "s/'firefox_firefox.desktop'//g")
 gsettings set org.gnome.shell favorite-apps "$FAVORITES"
 
-# 2. Snap版の削除
+# 2. Remove Snap version
 if snap list | grep -q firefox; then
   echo ">> Removing snap version of Firefox..."
   echo "   (Note: If this takes too long, abort (Ctrl+C), run 'sudo snap refresh', and try again)"
@@ -21,11 +21,11 @@ else
   echo ">> Snap version of Firefox is not installed."
 fi
 
-# 3. Mozilla Team PPAの追加
+# 3. Add Mozilla Team PPA
 echo ">> Adding Mozilla Team PPA..."
 sudo add-apt-repository -y ppa:mozillateam/ppa >/dev/null 2>&1
 
-# 4. APT Preferencesの設定（外部ファイルに依存せず、ここで直接生成する）
+# 4. Configure APT Preferences (Generate directly here without depending on external files)
 echo ">> Setting APT preferences to prioritize Deb over Snap..."
 sudo bash -c 'cat <<EOF > /etc/apt/preferences.d/99mozillateamppa
 Package: firefox*
@@ -37,16 +37,16 @@ Pin: release o=Ubuntu
 Pin-Priority: -1
 EOF'
 
-# 5. Deb版のインストール
+# 5. Install Deb version
 echo ">> Installing Deb version of Firefox..."
 sudo apt update >/dev/null 2>&1
 sudo apt -y install firefox
 
-# 6. Dock（お気に入り）の先頭への追加
+# 6. Add to the beginning of Dock (Favorites)
 echo ">> Adding Deb Firefox to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 if [[ "$FAVORITES" != *"'firefox.desktop'"* ]]; then
-  # 空の場合とそうでない場合でカンマの処理を分ける安全な処理
+  # Safe processing to handle commas differently if empty or not
   if [ "$FAVORITES" = "[]" ]; then
     NEW_FAVORITES="['firefox.desktop']"
   else
@@ -55,7 +55,7 @@ if [[ "$FAVORITES" != *"'firefox.desktop'"* ]]; then
   gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 fi
 
-# 7. 優先度の確認（apt-cache policy）
+# 7. Check priority (apt-cache policy)
 echo -e "\n>> Verification (apt-cache policy firefox):"
 apt-cache policy firefox
 

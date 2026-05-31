@@ -4,11 +4,11 @@
 COMMAND="$1"
 TEMP_DIR="Kawaiintu.temp"
 
-# 【修正】URLを大文字の "Icon" に修正しました
+# [Fix] Corrected URL to uppercase Icon
 ICON_URL="https://raw.githubusercontent.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/main/Icon/KawaiintuIcon.tar.xz"
 ICON_ARCHIVE="KawaiintuIcon.tar.xz"
 
-# 実行ユーザーと、そのユーザーのD-Busセッションアドレスを取得
+# Get the execution user and their D-Bus session address
 TARGET_USER="${SUDO_USER:-$USER}"
 TARGET_UID=$(id -u "$TARGET_USER")
 DBUS_ENV="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${TARGET_UID}/bus"
@@ -18,7 +18,7 @@ echo -e "\x1b[36;01m          Kawaiintu Icon Manager         \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 if [ "$COMMAND" = "install" ]; then
-    # curl がインストールされているか確認し、無ければ入れる
+    # Check if curl is installed, install if missing
     if ! command -v curl >/dev/null 2>&1; then
         echo ">> curl is not installed. Installing curl..."
         sudo apt update && sudo apt install -y curl
@@ -28,7 +28,7 @@ if [ "$COMMAND" = "install" ]; then
     mkdir -p "$TEMP_DIR/KawaiintuIcon"
 
     echo ">> Downloading $ICON_ARCHIVE..."
-    # 【修正】-f を付けて404エラー時に処理を止めるようにし、エラー出力を隠さない
+    # [Fix] Added -f to stop on 404 errors and show error output
     if ! curl -fL "$ICON_URL" -o "$TEMP_DIR/$ICON_ARCHIVE"; then
         echo ">> Error: Failed to download the icon archive. Please check the URL or network."
         rm -rf "$TEMP_DIR"
@@ -36,7 +36,7 @@ if [ "$COMMAND" = "install" ]; then
     fi
 
     echo ">> Extracting icons..."
-    # 【修正】解凍エラーも表示させる
+    # [Fix] Show extraction errors as well
     if ! tar -Jxf "$TEMP_DIR/$ICON_ARCHIVE" -C "$TEMP_DIR/KawaiintuIcon"; then
         echo ">> Error: Failed to extract the archive. The file might be corrupted."
         rm -rf "$TEMP_DIR"

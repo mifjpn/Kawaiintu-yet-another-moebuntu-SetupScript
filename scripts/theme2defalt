@@ -27,10 +27,10 @@ if ! askyn; then
   exit 0
 fi
 
-# 1. 最後にインストールされたテーマの uninstall.sh を探して実行
+# 1. Find and execute uninstall.sh of the most recently installed theme
 echo ">> Searching for Kawaiintu uninstaller..."
 UNINSTALLER_FOUND=0
-# 存在するテーマの中から一つを見つけてアンインストールスクリプトを叩く
+# Find one of the existing themes and run the uninstall script
 for t in /usr/share/themes/Kawaiintu-* /usr/share/themes/kawaiintu-*; do
   if [ -f "$t/uninstall.sh" ]; then
     sudo bash "$t/uninstall.sh"
@@ -39,7 +39,7 @@ for t in /usr/share/themes/Kawaiintu-* /usr/share/themes/kawaiintu-*; do
   fi
 done
 
-# もしKawaiintuのアンインストーラーが見つからなかった場合のフォールバック（旧Moe仕様からの復旧）
+# Fallback if Kawaiintu uninstaller is not found (Recovery from old Moe specs)
 if [ $UNINSTALLER_FOUND -eq 0 ]; then
   echo ">> Kawaiintu uninstaller not found. Applying fallback reset..."
   gsettings set org.gnome.desktop.interface gtk-theme "Yaru"
@@ -48,7 +48,7 @@ if [ $UNINSTALLER_FOUND -eq 0 ]; then
   sudo update-alternatives --set gdm-theme.gresource /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource >/dev/null 2>&1 || sudo update-alternatives --auto gdm-theme.gresource
 fi
 
-# 2. テーマディレクトリ自体の削除確認
+# 2. Confirmation to delete the theme directory itself
 echo ""
 echo -n ">> Do you want to permanently DELETE all installed Kawaiintu and Moe theme files? (Y/N): "
 if askyn; then

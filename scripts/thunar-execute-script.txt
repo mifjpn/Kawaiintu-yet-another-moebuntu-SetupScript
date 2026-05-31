@@ -1,6 +1,6 @@
 <action>
     <icon>utilities-terminal</icon>
-    <name>端末で実行 (Kawaiintu)</name>
+    <name>Execute in Terminal (Kawaiintu)</name>
     <submenu></submenu>
     <unique-id>kawaiintu-execute-terminal</unique-id>
     <command>/usr/bin/gnome-terminal -- %f</command>

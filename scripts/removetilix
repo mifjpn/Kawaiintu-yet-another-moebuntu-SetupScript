@@ -27,43 +27,43 @@ rmdir ~/.config/xfce4 2>/dev/null || true
 echo ">> Resetting Tilix dconf settings..."
 dconf reset -f /com/gexperts/Tilix/ 2>/dev/null || true
 
-# 5. Remove Tilix from Dock and restore standard Terminal (Python Safe Array Manipulation)
+# 5. Remove Tilix from Dock and restore standard Terminal (Bulletproof Regex Injection)
 echo ">> Restoring standard Terminal to dock favorites..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+export FAVORITES
 
-NEW_FAVORITES=$(python3 -c "
-import sys, ast
-raw = sys.argv[1].replace('@as ', '').strip()
-try:
-    favs = ast.literal_eval(raw)
-    if not isinstance(favs, list):
-        favs = []
-    
-    # Find the current position of Tilix before removing it
-    insert_idx = -1
-    for i, app in enumerate(favs):
-        if app == 'com.gexperts.Tilix.desktop':
-            insert_idx = i
-            break
-            
-    # Remove Tilix
-    favs = [x for x in favs if x != 'com.gexperts.Tilix.desktop']
-    
-    # Restore GNOME Terminal if it is missing
-    if 'org.gnome.Terminal.desktop' not in favs:
-        if insert_idx != -1:
-            # Insert Terminal exactly where Tilix used to be
-            favs.insert(insert_idx, 'org.gnome.Terminal.desktop')
-        else:
-            # If Tilix wasn't in the dock either, append Terminal to the end
-            favs.append('org.gnome.Terminal.desktop')
-            
-    # Format output for gsettings
-    print('[' + ', '.join([f\"'{x}'\" for x in favs]) + ']')
-except Exception:
-    # Fallback in case of an unexpected parsing error
-    print(\"['org.gnome.Terminal.desktop']\")
-" "$FAVORITES")
+NEW_FAVORITES=$(python3 << 'EOF'
+import os, re
+
+# Safely get the raw string via environment variable
+raw = os.environ.get('FAVORITES', '')
+
+# Extract all desktop files perfectly regardless of formatting
+favs = re.findall(r"'([^']+)'", raw)
+
+# Find the current position of Tilix before removing it
+insert_idx = -1
+for i, app in enumerate(favs):
+    if app == 'com.gexperts.Tilix.desktop':
+        insert_idx = i
+        break
+
+# Remove Tilix
+favs = [x for x in favs if x != 'com.gexperts.Tilix.desktop']
+
+# Restore GNOME Terminal if it is missing
+if 'org.gnome.Terminal.desktop' not in favs:
+    if insert_idx != -1:
+        # Insert Terminal exactly where Tilix used to be
+        favs.insert(insert_idx, 'org.gnome.Terminal.desktop')
+    else:
+        # If Tilix wasn't in the dock either, append Terminal to the end
+        favs.append('org.gnome.Terminal.desktop')
+
+# Format output for gsettings
+print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
+EOF
+)
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 

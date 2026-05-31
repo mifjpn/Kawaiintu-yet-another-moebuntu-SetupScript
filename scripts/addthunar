@@ -5,73 +5,52 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Thunar               \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Install via apt (along with compression/extraction tools and XFCE terminal bridge)
+# 1. Install via apt
 echo ">> Updating apt and installing Thunar & Archive tools..."
 sudo apt update >/dev/null 2>&1
-# exo-utils is required for Thunar's native terminal caller (exo-open) to work on Ubuntu
 sudo apt -y install thunar thunar-archive-plugin thunar-volman file-roller zip unzip xz-utils zenity exo-utils
 
 # ---------------------------------------------------------
-# 2. Fix Thunar icon (Overwrite completely in ~/.local)
+# 2. Fix Thunar icon
 # ---------------------------------------------------------
 echo ">> Configuring local menu icon for Thunar..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$LOCAL_APP_DIR"
 
-# Remove legacy files (e.g., kawaiintu-thunar) if they exist
 rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar.desktop"
 
-# Copy original system config file to local directory
 if [ -f /usr/share/applications/thunar.desktop ]; then
     cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
-    
-    # Overwrite icon to GNOME standard generic file manager icon (Theme compatible)
     sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
-    
-    # Append StartupWMClass if it doesn't exist for reliable association
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
         echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
     fi
-    
     update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
 fi
 
 # ---------------------------------------------------------
-# 3. Add to Dock (Favorites) - Bulletproof Regex Injection
+# 3. Add to Dock (Favorites)
 # ---------------------------------------------------------
 echo ">> Replacing Nautilus and setting Thunar strictly below Firefox..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 export FAVORITES
 
-# Use a Python heredoc with regex to completely avoid string parsing errors
 NEW_FAVORITES=$(python3 << 'EOF'
 import os, re
-
-# Safely get the raw string via environment variable
 raw = os.environ.get('FAVORITES', '')
-
-# Extract all desktop files perfectly regardless of formatting
 favs = re.findall(r"'([^']+)'", raw)
-
-# Remove Nautilus and any existing Thunar entries
 excludes = ['org.gnome.Nautilus.desktop', 'kawaiintu-thunar.desktop', 'thunar.desktop']
 favs = [x for x in favs if x not in excludes]
-
-# Find Firefox (whether Snap or Deb) and insert Thunar exactly after it
 ff_idx = -1
 for i, app in enumerate(favs):
     if app in ['firefox.desktop', 'firefox_firefox.desktop']:
         ff_idx = i
         break
-
 if ff_idx != -1:
     favs.insert(ff_idx + 1, 'thunar.desktop')
 else:
-    # Fallback: force to 2nd position if Firefox is missing entirely
     favs.insert(1, 'thunar.desktop')
-
-# Format output for gsettings
 print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
 EOF
 )
@@ -80,7 +59,7 @@ gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Done. Thunar is now placed correctly in favorites."
 
 # ---------------------------------------------------------
-# 4. Configure Thunar (XFCE) terminal call setting
+# 4. Configure Thunar Terminal Emulator
 # ---------------------------------------------------------
 echo ">> Configuring terminal settings for Thunar (XFCE base)..."
 mkdir -p ~/.config/xfce4
@@ -90,7 +69,6 @@ cat << 'EOF' > ~/.config/xfce4/helpers.rc
 TerminalEmulator=custom-TerminalEmulator
 EOF
 
-# Bypass the directory wrapper (which breaks script execution) and use native Tilix directly
 cat << 'EOF' > ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
 [Desktop Entry]
 NoDisplay=true
@@ -105,7 +83,27 @@ Name=Custom Terminal Wrapper
 EOF
 
 # ---------------------------------------------------------
-# 5. Inject custom actions (Compression) & Cleanup old actions
+# 5. Fix Script Double-Click Behavior
+# ---------------------------------------------------------
+echo ">> Configuring Thunar to prompt execution for shell scripts..."
+mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
+THUNAR_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml"
+
+if [ ! -f "$THUNAR_XML" ]; then
+    echo '<?xml version="1.0" encoding="UTF-8"?>' > "$THUNAR_XML"
+    echo '<channel name="thunar" version="1.0">' >> "$THUNAR_XML"
+    echo '  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>' >> "$THUNAR_XML"
+    echo '</channel>' >> "$THUNAR_XML"
+else
+    if ! grep -q 'misc-exec-executable-scripts-by-default' "$THUNAR_XML"; then
+        sed -i 's|</channel>|  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>\n</channel>|' "$THUNAR_XML"
+    else
+        sed -i 's/"misc-exec-executable-scripts-by-default" type="string" value="[^"]*"/"misc-exec-executable-scripts-by-default" type="string" value="ask"/' "$THUNAR_XML"
+    fi
+fi
+
+# ---------------------------------------------------------
+# 6. Inject custom actions & Cleanup
 # ---------------------------------------------------------
 echo ">> Injecting custom actions to Thunar (uca.xml)..."
 UCA_DIR="$HOME/.config/Thunar"
@@ -113,7 +111,6 @@ UCA_FILE="$UCA_DIR/uca.xml"
 
 mkdir -p "$UCA_DIR"
 
-# If uca.xml does not exist, copy from system default or create an empty structure
 if [ ! -f "$UCA_FILE" ]; then
     if [ -f "/etc/xdg/Thunar/uca.xml" ]; then
         cp /etc/xdg/Thunar/uca.xml "$UCA_FILE"
@@ -122,7 +119,6 @@ if [ ! -f "$UCA_FILE" ]; then
     fi
 fi
 
-# Clean up the broken 'kawaiintu-tilix-here' if it was added previously
 python3 -c "
 import xml.etree.ElementTree as ET
 import os
@@ -144,7 +140,6 @@ if os.path.exists(xml_file):
         pass
 "
 
-# Append ZIP and tar.xz actions if not already registered
 if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
     cat << 'EOF' > /tmp/thunar-compress.xml
 <action>
@@ -181,15 +176,12 @@ EOF
     rm -f /tmp/thunar-compress.xml
 fi
 
-# Restart Thunar quietly to apply changes immediately
 killall thunar 2>/dev/null || true
 
 # ---------------------------------------------------------
-# 6. Set as default file manager & Create dummy templates
+# 7. Set as default file manager & Create dummy templates
 # ---------------------------------------------------------
 xdg-mime default thunar.desktop inode/directory
-
-# Create dummy files to silence Thunar's missing template warning
 mkdir -p ~/Templates 2>/dev/null
 touch ~/Templates/"Text File.txt" 2>/dev/null
 

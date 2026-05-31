@@ -5,19 +5,19 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m             Installing Gedit            \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. パッケージのインストール
+# 1. Install packages
 echo ">> Updating apt and installing gedit..."
 sudo apt update >/dev/null 2>&1
 sudo apt -y install gedit
 
-# 2. デフォルトエディタへの設定
+# 2. Set as default editor
 echo ">> Setting Gedit as the default text editor..."
 
-# GUI (ファイルマネージャーでダブルクリックした時のデフォルト)
+# GUI (Default when double-clicking in file manager)
 xdg-mime default org.gnome.gedit.desktop text/plain
 
-# CLI (ターミナルなどでシステムが呼び出すデフォルトエディタ)
-# エラーが出ても止まらないように安全策をとっています
+# CLI (Default editor called by system in terminal, etc.)
+# Safety measure to not stop even if an error occurs
 sudo update-alternatives --set editor /usr/bin/gedit >/dev/null 2>&1 || true
 
 echo ">> Gedit has been successfully installed and set as default."

@@ -2,7 +2,7 @@
 # Kawaiintu Setup Helper - Set Plymouth Wrapper
 
 # ==== Variables ====
-# 正しいリポジトリURLに修正
+# Corrected to proper repository URL
 BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 PLYMOUTH_ARCHIVE="kawaii_plymouth.tar.xz"
 PLYMOUTH_URL="${BASE_URL}/plymouth/${PLYMOUTH_ARCHIVE}"
@@ -17,7 +17,7 @@ askyn() {
       break
     fi
   done
-  echo "" # 改行
+  echo "" # Line break
   return $retval
 }
 
@@ -25,7 +25,7 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m    Installing Kawaiintu Plymouth Theme  \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. アーカイブのダウンロードと解凍
+# 1. Download and extract archive
 echo ">> Creating temporary directory ($TEMP_DIR)..."
 mkdir -p "$TEMP_DIR"
 
@@ -35,7 +35,7 @@ curl -L "$PLYMOUTH_URL" --output "$TEMP_DIR/$PLYMOUTH_ARCHIVE" >/dev/null 2>&1
 echo ">> Extracting archive..."
 tar -Jxf "$TEMP_DIR/$PLYMOUTH_ARCHIVE" -C "$TEMP_DIR" >/dev/null 2>&1
 
-# findコマンドでinstall.shとディレクトリを動的に探す
+# Dynamically find install.sh and directory using find command
 INSTALL_SCRIPT=$(find "$TEMP_DIR" -name "install.sh" | head -n 1)
 EXTRACT_PATH=$(dirname "$INSTALL_SCRIPT")
 
@@ -45,12 +45,12 @@ if [ -z "$INSTALL_SCRIPT" ]; then
     exit 1
 fi
 
-# 2. ベーステーマのインストール（install.sh）
+# 2. Install base theme (install.sh)
 echo ">> Executing base installation (Administrator privileges required)..."
 echo "   (This may take a minute as it updates initramfs)"
 sudo bash "$INSTALL_SCRIPT"
 
-# 3. ユーザー対話：背景画像の変更
+# 3. User interaction: Change background image
 echo ""
 echo -n ">> Would you like to set a custom background image? (Y/N): "
 if askyn; then
@@ -60,11 +60,11 @@ if askyn; then
     echo -e "\x1b[33;01m--------------------------------------------------------\x1b[39;49;00m"
     read -p "File drop > " FileDrop
     
-    # ターミナルがドラッグ＆ドロップ時に付与するシングルクォートを取り除く
+    # Remove single quotes added by terminal during drag & drop
     CleanFileDrop=$(echo "$FileDrop" | tr -d \')
     
     echo ">> Applying background setting..."
-    # bg_change.sh にファイルパス（空ならそのまま空）を渡して丸投げする
+    # Pass file path (or empty if none) to bg_change.sh
     if [ -f "$EXTRACT_PATH/bg_change.sh" ]; then
         sudo bash "$EXTRACT_PATH/bg_change.sh" "$CleanFileDrop"
     else
@@ -74,7 +74,7 @@ else
     echo ">> Keeping the default black background."
 fi
 
-# 4. クリーンアップ
+# 4. Clean up
 echo ">> Cleaning up temporary files..."
 rm -rf "$TEMP_DIR"
 

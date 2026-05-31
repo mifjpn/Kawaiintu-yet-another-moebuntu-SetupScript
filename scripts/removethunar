@@ -66,12 +66,17 @@ rm -f ~/.config/xfce4/helpers.rc
 rm -f ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
 # Remove empty directories
 rmdir ~/.local/share/xfce4/helpers 2>/dev/null || true
-rmdir ~/.config/xfce4 2>/dev/null || true
 
 # 5. Remove user configuration files
 echo ">> Removing user configuration files..."
 rm -rf "$HOME/.config/Thunar"
 rm -rf "$HOME/.config/thunar"
+# Clean up script execution prompt settings
+rm -f "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml"
+# Clean up empty directories
+rmdir "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml" 2>/dev/null || true
+rmdir "$HOME/.config/xfce4/xfconf" 2>/dev/null || true
+rmdir "$HOME/.config/xfce4" 2>/dev/null || true
 
 # 6. Purge packages and clean dependencies
 echo ">> Purging Thunar and cleaning up packages..."

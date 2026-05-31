@@ -7,11 +7,11 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 echo ">> Updating apt and installing Parole Media Player..."
 sudo apt update >/dev/null 2>&1
-# gstreamerのプラグインも一緒に入れて再生できる形式を増やします
+# Install gstreamer plugins together to increase playable formats
 sudo apt -y install parole gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
 
 echo ">> Setting Parole as the default video player..."
-# Paroleを動画のデフォルトに設定
+# Set Parole as the default video player
 xdg-mime default org.xfce.Parole.desktop video/mp4
 xdg-mime default org.xfce.Parole.desktop video/x-matroska
 xdg-mime default org.xfce.Parole.desktop video/x-msvideo

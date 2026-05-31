@@ -11,7 +11,7 @@ COL_BLUE="\x1b[34;01m"
 COL_RESET="\x1b[39;49;00m"
 
 # ====== BASE URL & VERSION ======
-# リポジトリのRawファイルのベースURLとバージョン変数
+# Base URL for repository Raw files and version variables
 BASE_URL="https://github.com/mifjpn/Kawaiintu-yet-another-moebuntu-MifjpnsOriginal/raw/main"
 VER="2604"
 
@@ -38,24 +38,24 @@ fix_firefox_titlebar() {
     REAL_USER=${SUDO_USER:-$USER}
     USER_HOME=$(eval echo ~$REAL_USER)
     
-    # 従来版(.mozilla), Snap版, 新標準版(.config) の3パターンのプロファイルを全て検索
+    # Search all 3 profile patterns: legacy (.mozilla), Snap, and new standard (.config)
     for profile in "$USER_HOME/.mozilla/firefox/"*.default* \
                    "$USER_HOME/snap/firefox/common/.mozilla/firefox/"*.default* \
                    "$USER_HOME/.config/mozilla/firefox/"*.default*; do
         if [ -d "$profile" ]; then
             if [ -f "$profile/user.js" ]; then
-                # 古い設定の重複を削除
+                # Remove duplicate old settings
                 sed -i '/browser.tabs.inTitlebar/d' "$profile/user.js"
                 sed -i '/extensions.activeThemeID/d' "$profile/user.js"
             fi
             
-            # 1. タイトルバーを表示（システム枠を使用）
+            # 1. Show title bar (use system frame)
             echo 'user_pref("browser.tabs.inTitlebar", 0);' >> "$profile/user.js"
             
-            # 2. テーマを「システムのテーマに従う（デフォルト）」に強制設定
+            # 2. Force theme to Follow system theme (default)
             echo 'user_pref("extensions.activeThemeID", "default-theme@mozilla.org");' >> "$profile/user.js"
             
-            # 権限を一般ユーザーに戻す
+            # Restore permissions to normal user
             chown "$REAL_USER:$REAL_USER" "$profile/user.js"
         fi
     done
@@ -222,7 +222,17 @@ do
       break
     ;;
     "remove tilix")
-      /bin/bash ./removetilix ;
+      # Check if dependencies (Nemo/Thunar) exist before removing Tilix
+      if command -v nemo >/dev/null 2>&1 || command -v thunar >/dev/null 2>&1; then
+          echo -e "\n${COL_RED}[!] Error: Cannot remove Tilix right now.${COL_RESET}"
+          echo -e "${COL_YELLOW}Nemo or Thunar is currently installed and depends on Tilix for terminal functions.${COL_RESET}"
+          echo -e "${COL_YELLOW}Please remove them explicitly from the menu first before removing Tilix.${COL_RESET}\n"
+          echo -n "Hit Any Key to return to menu: "
+          read -r -n 1 -s answer
+          echo ""
+      else
+          /bin/bash ./removetilix ;
+      fi
       break
     ;;
     "add gedit")
