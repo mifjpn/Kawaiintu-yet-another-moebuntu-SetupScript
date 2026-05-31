@@ -5,13 +5,26 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Thunar               \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Install via apt
+# ---------------------------------------------------------
+# 0. Dependency Check: Auto-install Tilix if missing
+# ---------------------------------------------------------
+if ! command -v tilix >/dev/null 2>&1; then
+    echo -e "\x1b[33;01m>> Tilix is not installed. Automatically running addtilix first...\x1b[39;49;00m"
+    if [ -f "./addtilix" ]; then
+        /bin/bash ./addtilix
+        echo -e "\n\x1b[32;01m>> Returning to file manager installation...\x1b[39;49;00m\n"
+    else
+        echo -e "\x1b[31;01m>> Warning: ./addtilix script not found! Proceeding without Tilix...\x1b[39;49;00m"
+    fi
+fi
+
+# 1. Install via apt (thunar-volman excluded)
 echo ">> Updating apt and installing Thunar & Archive tools..."
 sudo apt update >/dev/null 2>&1
-sudo apt -y install thunar thunar-archive-plugin thunar-volman file-roller zip unzip xz-utils zenity exo-utils
+sudo apt -y install thunar thunar-archive-plugin file-roller zip unzip xz-utils zenity exo-utils
 
 # ---------------------------------------------------------
-# 2. Fix Thunar icon
+# 2. Fix Thunar icon (Including Settings & Bulk Rename)
 # ---------------------------------------------------------
 echo ">> Configuring local menu icon for Thunar..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
@@ -19,15 +32,31 @@ mkdir -p "$LOCAL_APP_DIR"
 
 rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar.desktop"
+rm -f "$LOCAL_APP_DIR/thunar-settings.desktop"
+rm -f "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
 
+# メインのThunar
 if [ -f /usr/share/applications/thunar.desktop ]; then
     cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
     sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
         echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
     fi
-    update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
 fi
+
+# Thunar設定
+if [ -f /usr/share/applications/thunar-settings.desktop ]; then
+    cp /usr/share/applications/thunar-settings.desktop "$LOCAL_APP_DIR/"
+    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-settings.desktop"
+fi
+
+# バルクリネーム
+if [ -f /usr/share/applications/thunar-bulk-rename.desktop ]; then
+    cp /usr/share/applications/thunar-bulk-rename.desktop "$LOCAL_APP_DIR/"
+    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+fi
+
+update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------
 # 3. Add to Dock (Favorites)
@@ -59,33 +88,19 @@ gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Done. Thunar is now placed correctly in favorites."
 
 # ---------------------------------------------------------
-# 4. Configure Thunar Terminal Emulator
+# 4. FIX: Terminal Configuration & Execution Behavior
 # ---------------------------------------------------------
-echo ">> Configuring terminal settings for Thunar (XFCE base)..."
+echo ">> Halting XFCE configuration daemons to prevent overwrites..."
+killall thunar xfconfd 2>/dev/null || true
+sleep 1
+
+echo ">> Configuring terminal settings and execution behavior..."
 mkdir -p ~/.config/xfce4
-mkdir -p ~/.local/share/xfce4/helpers
-
 cat << 'EOF' > ~/.config/xfce4/helpers.rc
-TerminalEmulator=custom-TerminalEmulator
+[Configuration]
+TerminalEmulator=tilix
 EOF
 
-cat << 'EOF' > ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
-[Desktop Entry]
-NoDisplay=true
-Version=1.0
-Encoding=UTF-8
-Type=X-XFCE-Helper
-X-XFCE-Category=TerminalEmulator
-X-XFCE-Commands=tilix;x-terminal-emulator;
-X-XFCE-CommandsWithParameter=tilix -e "%s";x-terminal-emulator -e "%s";
-Icon=tilix
-Name=Custom Terminal Wrapper
-EOF
-
-# ---------------------------------------------------------
-# 5. Fix Script Double-Click Behavior
-# ---------------------------------------------------------
-echo ">> Configuring Thunar to prompt execution for shell scripts..."
 mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
 THUNAR_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml"
 
@@ -95,15 +110,26 @@ if [ ! -f "$THUNAR_XML" ]; then
     echo '  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>' >> "$THUNAR_XML"
     echo '</channel>' >> "$THUNAR_XML"
 else
-    if ! grep -q 'misc-exec-executable-scripts-by-default' "$THUNAR_XML"; then
-        sed -i 's|</channel>|  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>\n</channel>|' "$THUNAR_XML"
-    else
+    if grep -q 'misc-exec-executable-scripts-by-default' "$THUNAR_XML"; then
         sed -i 's/"misc-exec-executable-scripts-by-default" type="string" value="[^"]*"/"misc-exec-executable-scripts-by-default" type="string" value="ask"/' "$THUNAR_XML"
+    else
+        sed -i 's|</channel>|  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>\n</channel>|' "$THUNAR_XML"
     fi
 fi
 
+cat << 'EOF' > ~/.local/share/applications/tilix-run-script.desktop
+[Desktop Entry]
+Name=Tilix (Run Script)
+Exec=tilix -e "%f"
+Icon=tilix
+Type=Application
+NoDisplay=false
+MimeType=application/x-shellscript;application/x-executable;text/plain;
+EOF
+update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
+
 # ---------------------------------------------------------
-# 6. Inject custom actions & Cleanup
+# 5. Inject custom actions & Cleanup
 # ---------------------------------------------------------
 echo ">> Injecting custom actions to Thunar (uca.xml)..."
 UCA_DIR="$HOME/.config/Thunar"
@@ -131,7 +157,7 @@ if os.path.exists(xml_file):
         changed = False
         for action in root.findall('action'):
             uid = action.find('unique-id')
-            if uid is not None and uid.text == 'kawaiintu-tilix-here':
+            if uid is not None and uid.text in ['kawaiintu-tilix-here', 'kawaiintu-run-tilix']:
                 root.remove(action)
                 changed = True
         if changed:
@@ -140,8 +166,22 @@ if os.path.exists(xml_file):
         pass
 "
 
-if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
-    cat << 'EOF' > /tmp/thunar-compress.xml
+if ! grep -q "kawaiintu-run-tilix" "$UCA_FILE"; then
+    cat << 'EOF' > /tmp/thunar-custom-actions.xml
+<action>
+    <icon>tilix</icon>
+    <name>Tilixで実行 (Run in Tilix)</name>
+    <unique-id>kawaiintu-run-tilix</unique-id>
+    <command>tilix -e "%f"</command>
+    <description>シェルスクリプトをTilixで実行</description>
+    <patterns>*.sh;*.bin;*.run;*Kawaset*</patterns>
+    <directories/>
+    <audio-files/>
+    <image-files/>
+    <other-files/>
+    <text-files/>
+    <video-files/>
+</action>
 <action>
     <icon>application-zip</icon>
     <name>Compress to ZIP</name>
@@ -172,14 +212,12 @@ if ! grep -q "kawaiintu-compress-zip" "$UCA_FILE"; then
 </action>
 EOF
     cp "$UCA_FILE" "${UCA_FILE}.bak"
-    awk '/<\/actions>/{system("cat /tmp/thunar-compress.xml")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
-    rm -f /tmp/thunar-compress.xml
+    awk '/<\/actions>/{system("cat /tmp/thunar-custom-actions.xml")}1' "${UCA_FILE}.bak" > "$UCA_FILE"
+    rm -f /tmp/thunar-custom-actions.xml
 fi
 
-killall thunar 2>/dev/null || true
-
 # ---------------------------------------------------------
-# 7. Set as default file manager & Create dummy templates
+# 6. Set as default file manager & Create dummy templates
 # ---------------------------------------------------------
 xdg-mime default thunar.desktop inode/directory
 mkdir -p ~/Templates 2>/dev/null

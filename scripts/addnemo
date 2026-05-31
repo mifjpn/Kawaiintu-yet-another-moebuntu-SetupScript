@@ -5,6 +5,19 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m         Installing Nemo                 \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
+# ---------------------------------------------------------
+# 0. Dependency Check: Auto-install Tilix if missing
+# ---------------------------------------------------------
+if [ ! -f /usr/local/bin/tilix-wrapper ]; then
+    echo -e "\x1b[33;01m>> Tilix (wrapper) is not installed. Automatically running addtilix first...\x1b[39;49;00m"
+    if [ -f "./addtilix" ]; then
+        /bin/bash ./addtilix
+        echo -e "\n\x1b[32;01m>> Returning to file manager installation...\x1b[39;49;00m\n"
+    else
+        echo -e "\x1b[31;01m>> Warning: ./addtilix script not found! Proceeding without Tilix...\x1b[39;49;00m"
+    fi
+fi
+
 # 1. Install via apt
 echo ">> Updating apt and installing nemo..."
 sudo apt update >/dev/null 2>&1

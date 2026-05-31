@@ -1,127 +1,54 @@
 #!/bin/bash
-# Kawaiintu Setup Helper - Add Tilix with wrapper
+# Kawaiintu Setup Helper - Add Tilix
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
-echo -e "\x1b[36;01m              Installing Tilix           \x1b[39;49;00m"
+echo -e "\x1b[36;01m         Installing Tilix                \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Install packages
-echo ">> Updating apt and installing Tilix..."
+echo ">> Updating apt and installing Tilix & dconf-cli..."
 sudo apt update >/dev/null 2>&1
-sudo apt -y install tilix python3-nautilus
+sudo apt -y install tilix dconf-cli
 
-# 2. Create Tilix wrapper script
-echo ">> Creating Tilix wrapper for compatibility..."
-cat << 'EOF' | sudo tee /usr/local/bin/tilix-wrapper > /dev/null
+echo ">> Creating tilix-wrapper for File Manager integration..."
+sudo tee /usr/local/bin/tilix-wrapper > /dev/null << 'EOF'
 #!/bin/bash
-# Exclude terminal execution options automatically added by file managers like Thunar
-if [ "$1" = "-e" ] || [ "$1" = "-x" ]; then
-    shift
-fi
-
-if [ $# -gt 0 ]; then
-    # 1. If the argument is an existing file (script)
-    if [ -f "$1" ]; then
-        TARGET_DIR="$(dirname "$(realpath "$1")")"
-        TARGET_FILE="$(basename "$(realpath "$1")")"
-        tilix --working-directory="$TARGET_DIR" -e bash -c "\"./$TARGET_FILE\" ; echo -e '\n[Process completed]'; exec \$SHELL"
-        
-    # 2. If the argument is an existing directory
-    elif [ -d "$1" ]; then
-        tilix --working-directory="$(realpath "$1")"
-        
-    # 3. For other normal commands
-    else
-        tilix -e bash -c "$* ; echo -e '\n[Process completed]'; exec \$SHELL"
-    fi
+if [ $# -eq 0 ]; then
+    exec tilix
+elif [ -d "$1" ]; then
+    exec tilix --working-directory="$1"
 else
-    # 4. No arguments
-    tilix
+    exec tilix -e "$@"
 fi
 EOF
 
-# Grant execution permissions
 sudo chmod +x /usr/local/bin/tilix-wrapper
 
-# 3. Set the wrapper as the system default terminal (GNOME)
-echo ">> Setting Tilix as the default terminal for GNOME..."
-gsettings set org.gnome.desktop.default-applications.terminal exec '/usr/local/bin/tilix-wrapper'
-gsettings set org.gnome.desktop.default-applications.terminal exec-arg '-e'
+echo ">> Setting Tilix Wrapper as default x-terminal-emulator..."
+sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/tilix-wrapper 100 >/dev/null 2>&1 || true
+sudo update-alternatives --set x-terminal-emulator /usr/local/bin/tilix-wrapper >/dev/null 2>&1 || true
 
-# 4. Set the wrapper as the system standard (x-terminal-emulator)
-echo ">> Setting system alternatives (x-terminal-emulator)..."
-sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/local/bin/tilix-wrapper 100
-sudo update-alternatives --set x-terminal-emulator /usr/local/bin/tilix-wrapper
+# ---------------------------------------------------------
+# Configure Tilix: GTK UI with Black Terminal Background
+# ---------------------------------------------------------
+echo ">> Configuring Tilix to use GTK UI with Black Background..."
 
-# 5. XFCE (Thunar) helper settings (Match perfectly with Thunar to prevent conflicts)
-echo ">> Registering to XFCE/Thunar helpers..."
-mkdir -p ~/.config/xfce4
-mkdir -p ~/.local/share/xfce4/helpers
+# 1. 現在のデフォルトプロファイルのIDを取得
+PROFILE_ID=$(gsettings get com.gexperts.Tilix.ProfilesList default 2>/dev/null | tr -d \')
 
-cat << 'EOF' > ~/.config/xfce4/helpers.rc
-TerminalEmulator=custom-TerminalEmulator
-EOF
-
-# Unified with native calls instead of wrapper, aligning with addthunar modifications
-cat << 'EOF' > ~/.local/share/xfce4/helpers/custom-TerminalEmulator.desktop
-[Desktop Entry]
-NoDisplay=true
-Version=1.0
-Encoding=UTF-8
-Type=X-XFCE-Helper
-X-XFCE-Category=TerminalEmulator
-X-XFCE-Commands=tilix;x-terminal-emulator;
-X-XFCE-CommandsWithParameter=tilix -e "%s";x-terminal-emulator -e "%s";
-Icon=tilix
-Name=Custom Terminal Wrapper
-EOF
-
-# 6. Tilix profile settings (Fix background to black)
-echo ">> Configuring Tilix profile (Setting black background)..."
-PROFILE_UUID=$(gsettings get com.gexperts.Tilix.ProfilesList default 2>/dev/null | tr -d "'")
-if [ -z "$PROFILE_UUID" ] || [ "$PROFILE_UUID" = "null" ]; then
-    PROFILE_UUID=$(cat /proc/sys/kernel/random/uuid)
-    gsettings set com.gexperts.Tilix.ProfilesList list "['$PROFILE_UUID']" 2>/dev/null || true
-    gsettings set com.gexperts.Tilix.ProfilesList default "'$PROFILE_UUID'" 2>/dev/null || true
+if [ -z "$PROFILE_ID" ] || [ "$PROFILE_ID" == "null" ]; then
+    PROFILE_ID="2b7c4080-0ddd-46c5-8f23-563fd3ba789d"
+    gsettings set com.gexperts.Tilix.ProfilesList default "'$PROFILE_ID'" 2>/dev/null || true
 fi
 
-dconf write /com/gexperts/Tilix/profiles/${PROFILE_UUID}/use-theme-colors false
-dconf write /com/gexperts/Tilix/profiles/${PROFILE_UUID}/background-color "'#000000'"
-dconf write /com/gexperts/Tilix/profiles/${PROFILE_UUID}/foreground-color "'#FFFFFF'"
+# 2. UI全体はシステムのGTKテーマに追従させる
+gsettings set com.gexperts.Tilix.Settings theme-variant 'system' 2>/dev/null || true
 
-# 7. Fix Dock (Favorites) pinning with safe array manipulation in Python
-echo ">> Replacing standard Terminal with Tilix in dock favorites..."
-FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
-export FAVORITES
+# 3. ターミナル内のテキストエリアのみ、テーマ同期を切って黒背景・白文字に強制
+dconf write /com/gexperts/Tilix/profiles/${PROFILE_ID}/use-theme-colors false 2>/dev/null || true
+dconf write /com/gexperts/Tilix/profiles/${PROFILE_ID}/background-color "'#000000'" 2>/dev/null || true
+dconf write /com/gexperts/Tilix/profiles/${PROFILE_ID}/foreground-color "'#FFFFFF'" 2>/dev/null || true
 
-NEW_FAVORITES=$(python3 << 'EOF'
-import os, re
-
-raw = os.environ.get('FAVORITES', '')
-favs = re.findall(r"'([^']+)'", raw)
-
-insert_idx = -1
-for i, app in enumerate(favs):
-    if app == 'org.gnome.Terminal.desktop':
-        insert_idx = i
-        break
-
-# Temporarily exclude standard Terminal and any existing Tilix
-favs = [x for x in favs if x not in ['org.gnome.Terminal.desktop', 'com.gexperts.Tilix.desktop']]
-
-# Insert Tilix exactly where the standard Terminal was
-if insert_idx != -1:
-    favs.insert(insert_idx, 'com.gexperts.Tilix.desktop')
-else:
-    favs.append('com.gexperts.Tilix.desktop')
-
-print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
-EOF
-)
-
-gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-
-echo ">> Tilix has been successfully installed and configured."
+echo ">> Tilix setup is fully completed."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer
