@@ -44,17 +44,12 @@ export FAVORITES
 NEW_FAVORITES=$(python3 << 'EOF'
 import os, re
 
-# Safely get the raw string via environment variable
 raw = os.environ.get('FAVORITES', '')
-
-# Extract all desktop files perfectly regardless of formatting
 favs = re.findall(r"'([^']+)'", raw)
 
-# Remove Nautilus and any existing Nemo entries
 excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop']
 favs = [x for x in favs if x not in excludes]
 
-# Find Firefox (whether Snap or Deb) and insert Nemo exactly after it
 ff_idx = -1
 for i, app in enumerate(favs):
     if app in ['firefox.desktop', 'firefox_firefox.desktop']:
@@ -64,10 +59,8 @@ for i, app in enumerate(favs):
 if ff_idx != -1:
     favs.insert(ff_idx + 1, 'nemo.desktop')
 else:
-    # Fallback: force to 2nd position if Firefox is missing entirely
     favs.insert(1, 'nemo.desktop')
 
-# Format output for gsettings
 print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
 EOF
 )
@@ -85,7 +78,6 @@ else
     NEMO_TERM="x-terminal-emulator"
 fi
 
-# Set Cinnamon's gsettings so Nemo's native "Open in Terminal" works flawlessly
 gsettings set org.cinnamon.desktop.default-applications.terminal exec "$NEMO_TERM" 2>/dev/null || true
 gsettings set org.cinnamon.desktop.default-applications.terminal exec-arg "-e" 2>/dev/null || true
 
@@ -93,12 +85,16 @@ gsettings set org.cinnamon.desktop.default-applications.terminal exec-arg "-e" 2
 # 4. Set as default file manager & Create dummy templates
 # ---------------------------------------------------------
 xdg-mime default nemo.desktop inode/directory
+
+# Create templates for both English and Japanese environments
 mkdir -p ~/Templates 2>/dev/null
 touch ~/Templates/"Text File.txt" 2>/dev/null
+
+mkdir -p ~/テンプレート 2>/dev/null
+touch ~/テンプレート/"Text File.txt" 2>/dev/null
 
 echo ">> Nemo setup is fully completed."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer
 echo ""
-

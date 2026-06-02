@@ -34,64 +34,46 @@ sudo apt update >/dev/null 2>&1
 sudo apt -y install thunar thunar-archive-plugin file-roller zip unzip xz-utils zenity exo-utils
 
 # ---------------------------------------------------------
-# 2. Fix Thunar icon & Hide conflicting apps
+# 2. Fix Thunar icons (Main, Settings, Bulk Rename)
 # ---------------------------------------------------------
-echo ">> Configuring local menu icon for Thunar and hiding conflicting apps..."
+echo ">> Configuring local menu icons for Thunar..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$LOCAL_APP_DIR"
 
-# Remove target editor from association history (does not affect Tilix)
-if [ -f ~/.config/mimeapps.list ]; then
-    sed -i '/org\.gnome\.TextEditor/d' ~/.config/mimeapps.list
-    sed -i '/gnome-text-editor/d' ~/.config/mimeapps.list
-    sed -i '/snap\.gedit/d' ~/.config/mimeapps.list
-fi
-
-# Completely hide standard and Snap text editors that ignore themes from "Open With" menu
-BAD_EDITORS=(
-    "org.gnome.TextEditor.desktop"
-    "gnome-text-editor_gnome-text-editor.desktop"
-    "snap.gnome-text-editor.gnome-text-editor.desktop"
-    "snap.gedit.gedit.desktop"
-    "gnome-text-editor.desktop"
-)
-
-for bad_app in "${BAD_EDITORS[@]}"; do
-    echo -e "[Desktop Entry]\nHidden=true" > "$LOCAL_APP_DIR/$bad_app"
-done
-
+# Clean up old overrides to restore correct icons for Settings and Bulk Rename
 rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
-rm -f "$LOCAL_APP_DIR/thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-settings.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
 
 # Main Thunar
 if [ -f /usr/share/applications/thunar.desktop ]; then
     cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
-    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/thunar.desktop"
     sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
         echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
     fi
+    sed -i '/^Name\[/d' "$LOCAL_APP_DIR/thunar.desktop"
+    sed -i '/^GenericName\[/d' "$LOCAL_APP_DIR/thunar.desktop"
+    chmod +x "$LOCAL_APP_DIR/thunar.desktop"
 fi
 
 # Thunar Settings
 if [ -f /usr/share/applications/thunar-settings.desktop ]; then
     cp /usr/share/applications/thunar-settings.desktop "$LOCAL_APP_DIR/"
-    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/thunar-settings.desktop"
-    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-settings.desktop"
+    sed -i 's/^Icon=.*/Icon=preferences-system/' "$LOCAL_APP_DIR/thunar-settings.desktop"
+    sed -i '/^Name\[/d' "$LOCAL_APP_DIR/thunar-settings.desktop"
+    chmod +x "$LOCAL_APP_DIR/thunar-settings.desktop"
 fi
 
-# Bulk Rename
+# Thunar Bulk Rename
 if [ -f /usr/share/applications/thunar-bulk-rename.desktop ]; then
     cp /usr/share/applications/thunar-bulk-rename.desktop "$LOCAL_APP_DIR/"
-    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
-    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+    sed -i 's/^Icon=.*/Icon=accessories-text-editor/' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+    sed -i '/^Name\[/d' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+    chmod +x "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
 fi
 
 update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
-sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
-sudo gtk-update-icon-cache -f -t /usr/share/icons/gnome >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------
 # 3. Add to Dock (Favorites)
@@ -142,17 +124,17 @@ THUNAR_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml"
 if [ ! -f "$THUNAR_XML" ]; then
     echo '<?xml version="1.0" encoding="UTF-8"?>' > "$THUNAR_XML"
     echo '<channel name="thunar" version="1.0">' >> "$THUNAR_XML"
-    echo '  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>' >> "$THUNAR_XML"
+    echo '  <property name="misc-exec-executable-scripts-by-default" type="string" value="execute"/>' >> "$THUNAR_XML"
     echo '</channel>' >> "$THUNAR_XML"
 else
     if grep -q 'misc-exec-executable-scripts-by-default' "$THUNAR_XML"; then
-        sed -i 's/"misc-exec-executable-scripts-by-default" type="string" value="[^"]*"/"misc-exec-executable-scripts-by-default" type="string" value="ask"/' "$THUNAR_XML"
+        sed -i 's/"misc-exec-executable-scripts-by-default" type="string" value="[^"]*"/"misc-exec-executable-scripts-by-default" type="string" value="execute"/' "$THUNAR_XML"
     else
-        sed -i 's|</channel>|  <property name="misc-exec-executable-scripts-by-default" type="string" value="ask"/>\n</channel>|' "$THUNAR_XML"
+        sed -i 's|</channel>|  <property name="misc-exec-executable-scripts-by-default" type="string" value="execute"/>\n</channel>|' "$THUNAR_XML"
     fi
 fi
 
-# Create exclusively for scripts, excluding text/plain from MimeType
+# Thunar MUST see this file as "NoDisplay=false", otherwise it refuses to set it as default
 cat << 'EOF' > ~/.local/share/applications/tilix-run-script.desktop
 [Desktop Entry]
 Name=Tilix (Run Script)
@@ -162,19 +144,7 @@ Type=Application
 NoDisplay=false
 MimeType=application/x-shellscript;application/x-executable;
 EOF
-
 update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
-
-# Strip Gedit priority and force default action for shell scripts to "Execute"
-if [ -f ~/.config/mimeapps.list ]; then
-    sed -i '/application\/x-shellscript=/d' ~/.config/mimeapps.list
-    sed -i '/application\/x-executable=/d' ~/.config/mimeapps.list
-fi
-echo "application/x-shellscript=tilix-run-script.desktop" >> ~/.config/mimeapps.list
-echo "application/x-executable=tilix-run-script.desktop" >> ~/.config/mimeapps.list
-
-xdg-mime default tilix-run-script.desktop application/x-shellscript
-xdg-mime default tilix-run-script.desktop application/x-executable
 
 # ---------------------------------------------------------
 # 5. Inject custom actions & Cleanup
@@ -221,7 +191,7 @@ if ! grep -q "kawaiintu-run-tilix" "$UCA_FILE"; then
     <name>Run in Tilix</name>
     <unique-id>kawaiintu-run-tilix</unique-id>
     <command>tilix -e "%f"</command>
-    <description>Execute shell script in Tilix</description>
+    <description>Run shell script in Tilix</description>
     <patterns>*.sh;*.bin;*.run;*Kawaset*</patterns>
     <directories/>
     <audio-files/>
@@ -265,13 +235,81 @@ EOF
 fi
 
 # ---------------------------------------------------------
-# 6. Set as default file manager & Create dummy templates
+# 6. Set as default file manager & Text Editor
 # ---------------------------------------------------------
+echo ">> Setting defaults (Thunar, Gedit & Script Execution)..."
 xdg-mime default thunar.desktop inode/directory
-mkdir -p ~/Templates 2>/dev/null
-touch ~/Templates/"Text File.txt" 2>/dev/null
 
-echo ">> Thunar setup is fully completed (with Custom Actions)."
+# Clear MIME cache to force system to re-read desktop files
+rm -f ~/.local/share/applications/mimeinfo.cache
+update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
+
+# Correctly mask Snap Text Editor so it doesn't show as "名前なし" (Unnamed)
+mkdir -p ~/.local/share/applications
+cat << 'EOF' > ~/.local/share/applications/gnome-text-editor_gnome-text-editor.desktop
+[Desktop Entry]
+Name=GNOME Text Editor (Snap)
+Type=Application
+Hidden=true
+NoDisplay=true
+EOF
+cat << 'EOF' > ~/.local/share/applications/org.gnome.TextEditor.desktop
+[Desktop Entry]
+Name=GNOME Text Editor
+Type=Application
+Hidden=true
+NoDisplay=true
+EOF
+
+# Force common apps to appear in English in the context menu
+for app in org.gnome.gedit tilix file-roller org.gnome.FileRoller; do
+    if [ -f "/usr/share/applications/${app}.desktop" ]; then
+        cp "/usr/share/applications/${app}.desktop" ~/.local/share/applications/
+        sed -i '/^Name\[/d' ~/.local/share/applications/${app}.desktop
+        sed -i '/^GenericName\[/d' ~/.local/share/applications/${app}.desktop
+        chmod +x ~/.local/share/applications/${app}.desktop
+    fi
+done
+
+# Ensure Gedit is specifically named just "Gedit"
+sed -i 's/^Name=.*/Name=Gedit/' ~/.local/share/applications/org.gnome.gedit.desktop 2>/dev/null || true
+update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
+
+# Aggressively enforce defaults via mimeapps.list
+MIME_FILE="$HOME/.config/mimeapps.list"
+mkdir -p "$HOME/.config"
+touch "$MIME_FILE"
+if ! grep -q "^\[Default Applications\]" "$MIME_FILE"; then
+    echo "[Default Applications]" >> "$MIME_FILE"
+fi
+if ! grep -q "^\[Added Associations\]" "$MIME_FILE"; then
+    echo "" >> "$MIME_FILE"
+    echo "[Added Associations]" >> "$MIME_FILE"
+fi
+
+# --- 1. Set Gedit as default ONLY for plain text files ---
+for mime_type in text/plain; do
+    sed -i "|^${mime_type}=.*|d" "$MIME_FILE"
+    sed -i "/^\[Default Applications\]/a ${mime_type}=org.gnome.gedit.desktop;" "$MIME_FILE"
+    xdg-mime default org.gnome.gedit.desktop "$mime_type" 2>/dev/null || true
+    gio mime "$mime_type" org.gnome.gedit.desktop >/dev/null 2>&1 || true
+done
+
+# --- 2. Force Scripts to RUN on Double-Click, and add Gedit to Right-Click ---
+for mime_type in application/x-shellscript application/x-executable; do
+    # Completely remove any existing defaults for scripts (preventing fallback to Gedit)
+    sed -i "|^${mime_type}=.*|d" "$MIME_FILE"
+    
+    # Set the absolute default for scripts to our Run wrapper
+    sed -i "/^\[Default Applications\]/a ${mime_type}=tilix-run-script.desktop;" "$MIME_FILE"
+    xdg-mime default tilix-run-script.desktop "$mime_type" 2>/dev/null || true
+    gio mime "$mime_type" tilix-run-script.desktop >/dev/null 2>&1 || true
+    
+    # Add Gedit to the right-click "Open With" menu for editing
+    sed -i "/^\[Added Associations\]/a ${mime_type}=org.gnome.gedit.desktop;" "$MIME_FILE"
+done
+
+echo ">> Thunar setup is fully completed."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer

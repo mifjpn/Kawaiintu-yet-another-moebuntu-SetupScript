@@ -47,7 +47,10 @@ mkdir -p "$LOCAL_APP_DIR"
 if [ -f /usr/share/applications/firefox.desktop ]; then
     cp /usr/share/applications/firefox.desktop "$LOCAL_APP_DIR/"
     
-    # Rewrite to the correct icon name "firefox_mk2"
+    # Remove localized icon entries (like Icon[ja]=...) that override the default icon
+    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/firefox.desktop"
+    
+    # Rewrite to the exact correct icon filename WITHOUT extension (Freedesktop spec)
     sed -i 's/^Icon=.*/Icon=firefox_mk2/' "$LOCAL_APP_DIR/firefox.desktop"
     
     # Specify WMClass on startup to ensure Dock links this shortcut
@@ -62,6 +65,7 @@ if [ -f /usr/share/applications/firefox.desktop ]; then
     update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
     sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
     sudo gtk-update-icon-cache -f -t /usr/share/icons/gnome >/dev/null 2>&1 || true
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/KawaiintuIcon >/dev/null 2>&1 || true
 fi
 
 # ---------------------------------------------------------
