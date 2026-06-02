@@ -6,7 +6,7 @@ echo -e "\x1b[36;01m         Installing Nemo                 \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 # ---------------------------------------------------------
-# 0. Dependency Check: Auto-install Tilix if missing
+# 0. Dependency Check: Auto-install Tilix & Gedit if missing
 # ---------------------------------------------------------
 if [ ! -f /usr/local/bin/tilix-wrapper ]; then
     echo -e "\x1b[33;01m>> Tilix (wrapper) is not installed. Automatically running addtilix first...\x1b[39;49;00m"
@@ -15,6 +15,16 @@ if [ ! -f /usr/local/bin/tilix-wrapper ]; then
         echo -e "\n\x1b[32;01m>> Returning to file manager installation...\x1b[39;49;00m\n"
     else
         echo -e "\x1b[31;01m>> Warning: ./addtilix script not found! Proceeding without Tilix...\x1b[39;49;00m"
+    fi
+fi
+
+if ! command -v gedit >/dev/null 2>&1; then
+    echo -e "\x1b[33;01m>> Gedit is not installed. Automatically running addgedit first...\x1b[39;49;00m"
+    if [ -f "./addgedit" ]; then
+        /bin/bash ./addgedit
+        echo -e "\n\x1b[32;01m>> Returning to file manager installation...\x1b[39;49;00m\n"
+    else
+        echo -e "\x1b[31;01m>> Warning: ./addgedit script not found! Proceeding without Gedit...\x1b[39;49;00m"
     fi
 fi
 

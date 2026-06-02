@@ -6,7 +6,7 @@ echo -e "\x1b[36;01m         Installing Thunar               \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 # ---------------------------------------------------------
-# 0. Dependency Check: Auto-install Tilix if missing
+# 0. Dependency Check: Auto-install Tilix & Gedit if missing
 # ---------------------------------------------------------
 if ! command -v tilix >/dev/null 2>&1; then
     echo -e "\x1b[33;01m>> Tilix is not installed. Automatically running addtilix first...\x1b[39;49;00m"
@@ -15,6 +15,16 @@ if ! command -v tilix >/dev/null 2>&1; then
         echo -e "\n\x1b[32;01m>> Returning to file manager installation...\x1b[39;49;00m\n"
     else
         echo -e "\x1b[31;01m>> Warning: ./addtilix script not found! Proceeding without Tilix...\x1b[39;49;00m"
+    fi
+fi
+
+if ! command -v gedit >/dev/null 2>&1; then
+    echo -e "\x1b[33;01m>> Gedit is not installed. Automatically running addgedit first...\x1b[39;49;00m"
+    if [ -f "./addgedit" ]; then
+        /bin/bash ./addgedit
+        echo -e "\n\x1b[32;01m>> Returning to file manager installation...\x1b[39;49;00m\n"
+    else
+        echo -e "\x1b[31;01m>> Warning: ./addgedit script not found! Proceeding without Gedit...\x1b[39;49;00m"
     fi
 fi
 
@@ -35,28 +45,25 @@ rm -f "$LOCAL_APP_DIR/thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-settings.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
 
-# メインのThunar
-if [ -f /usr/share/applications/thunar.desktop ]; then
-    cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
-    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
+# Thunar関連のショートカットをまとめて処理
+for app in thunar thunar-settings thunar-bulk-rename; do
+    if [ -f "/usr/share/applications/${app}.desktop" ]; then
+        cp "/usr/share/applications/${app}.desktop" "$LOCAL_APP_DIR/"
+        sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/${app}.desktop"
+    fi
+done
+
+# メインThunarのWMClass追記
+if [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
         echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
     fi
 fi
 
-# Thunar設定
-if [ -f /usr/share/applications/thunar-settings.desktop ]; then
-    cp /usr/share/applications/thunar-settings.desktop "$LOCAL_APP_DIR/"
-    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-settings.desktop"
-fi
-
-# バルクリネーム
-if [ -f /usr/share/applications/thunar-bulk-rename.desktop ]; then
-    cp /usr/share/applications/thunar-bulk-rename.desktop "$LOCAL_APP_DIR/"
-    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
-fi
-
+# データベースの更新と、アイコンキャッシュの強制リフレッシュ
 update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
+sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+sudo gtk-update-icon-cache -f -t /usr/share/icons/gnome >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------
 # 3. Add to Dock (Favorites)
@@ -223,7 +230,7 @@ xdg-mime default thunar.desktop inode/directory
 mkdir -p ~/Templates 2>/dev/null
 touch ~/Templates/"Text File.txt" 2>/dev/null
 
-echo ">> Thunar setup is fully completed (with Custom Actions)."
+echo ">> Thunar setup is fully completed."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer

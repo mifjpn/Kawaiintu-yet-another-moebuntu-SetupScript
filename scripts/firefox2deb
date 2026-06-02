@@ -10,7 +10,8 @@ if snap list | grep -q firefox; then
   echo ">> Removing snap version of Firefox..."
   echo "   (Note: If this takes too long, abort (Ctrl+C), run 'sudo snap refresh', and try again)"
   sudo snap remove --purge firefox
-  sudo apt remove -y --autoremove firefox >/dev/null 2>&1
+  # CD-ROMなどのシステムパッケージ巻き込み削除を防止するため --autoremove を除外
+  sudo apt remove -y firefox >/dev/null 2>&1
 else
   echo ">> Snap version of Firefox is not installed."
 fi
@@ -45,8 +46,17 @@ mkdir -p "$LOCAL_APP_DIR"
 
 if [ -f /usr/share/applications/firefox.desktop ]; then
     cp /usr/share/applications/firefox.desktop "$LOCAL_APP_DIR/"
-    # アイコン指定を強制書き換え
+    
+    # アイコン指定が絶対パスでハードコードされている場合も考慮し、強制的に "firefox" に書き換え
     sed -i 's/^Icon=.*/Icon=firefox/' "$LOCAL_APP_DIR/firefox.desktop"
+    
+    # 起動時のWMClassを明記して、Dockが確実にこのショートカットと実行画面を紐付けるようにする
+    if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/firefox.desktop"; then
+        echo "StartupWMClass=Firefox" >> "$LOCAL_APP_DIR/firefox.desktop"
+    fi
+    
+    # GNOME Shellにこのローカルファイルを「安全」と認識させるための実行権限付与
+    chmod +x "$LOCAL_APP_DIR/firefox.desktop"
     
     # データベースの更新と、GNOMEのアイコンキャッシュの強制リフレッシュ
     update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
@@ -55,7 +65,39 @@ if [ -f /usr/share/applications/firefox.desktop ]; then
 fi
 
 # ---------------------------------------------------------
-# 6. Add to the beginning of Dock (Favorites) safely via Python
+# 6. Configure Firefox UI (Titlebar & Theme Sync)
+# ---------------------------------------------------------
+echo ">> Configuring Firefox UI to use system titlebar..."
+REAL_USER=${SUDO_USER:-$USER}
+USER_HOME=$(eval echo ~$REAL_USER)
+
+# 既に起動してプロファイルがある場合への適用
+for profile in "$USER_HOME/.mozilla/firefox/"*.default* \
+               "$USER_HOME/snap/firefox/common/.mozilla/firefox/"*.default* \
+               "$USER_HOME/.config/mozilla/firefox/"*.default*; do
+    if [ -d "$profile" ]; then
+        if [ -f "$profile/user.js" ]; then
+            sed -i '/browser.tabs.inTitlebar/d' "$profile/user.js"
+            sed -i '/extensions.activeThemeID/d' "$profile/user.js"
+        fi
+        
+        # タイトルバーを表示し、テーマをシステムデフォルトに追従させる
+        echo 'user_pref("browser.tabs.inTitlebar", 0);' >> "$profile/user.js"
+        echo 'user_pref("extensions.activeThemeID", "default-theme@mozilla.org");' >> "$profile/user.js"
+        
+        chown "$REAL_USER:$REAL_USER" "$profile/user.js" 2>/dev/null || true
+    fi
+done
+
+# まだ一度も起動していない（プロファイル未作成）環境でも確実に効かせるため、
+# システム全体のデフォルト設定ファイル(syspref.js)にも追記しておく
+if [ -d "/etc/firefox" ]; then
+    sudo bash -c 'echo "pref(\"browser.tabs.inTitlebar\", 0);" >> /etc/firefox/syspref.js'
+    sudo bash -c 'echo "pref(\"extensions.activeThemeID\", \"default-theme@mozilla.org\");" >> /etc/firefox/syspref.js'
+fi
+
+# ---------------------------------------------------------
+# 7. Add to the beginning of Dock (Favorites) safely via Python
 # ---------------------------------------------------------
 echo ">> Adding Deb Firefox to dock..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
@@ -76,7 +118,7 @@ EOF
 
 gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 
-# 7. Check priority (apt-cache policy)
+# 8. Check priority (apt-cache policy)
 echo -e "\n>> Verification (apt-cache policy firefox):"
 apt-cache policy firefox
 

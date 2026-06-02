@@ -2,7 +2,7 @@
 # Kawaiintu Setup Helper - Remove Thunar
 
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
-echo -e "\x1b[36;01m              Removing Thunar            \x1b[39;49;00m"
+echo -e "\x1b[36;01m             Removing Thunar             \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
 # 1. Remove from Dock and restore Nautilus (Bulletproof Regex Injection)
@@ -53,12 +53,15 @@ sudo killall -q thunar >/dev/null 2>&1
 # 3. Remove local menu icon override
 echo ">> Removing local menu icon override..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
-if [ -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop" ] || [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
-    rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
-    rm -f "$LOCAL_APP_DIR/thunar.desktop"
-    update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
-    echo ">> Local Thunar menu icon override removed."
-fi
+
+# addthunarで追加したすべてのショートカットを確実に削除
+rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
+rm -f "$LOCAL_APP_DIR/thunar.desktop"
+rm -f "$LOCAL_APP_DIR/thunar-settings.desktop"
+rm -f "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+
+update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
+echo ">> Local Thunar menu icon overrides removed."
 
 # 4. Clean up XFCE terminal helper settings
 echo ">> Resetting terminal settings for Thunar (XFCE base)..."
