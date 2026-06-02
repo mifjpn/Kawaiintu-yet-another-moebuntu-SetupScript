@@ -54,7 +54,7 @@ sudo killall -q thunar >/dev/null 2>&1
 echo ">> Removing local menu icon override..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 
-# addthunarで追加したすべてのショートカットを確実に削除
+# Ensure all shortcuts added by addthunar are removed
 rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-settings.desktop"

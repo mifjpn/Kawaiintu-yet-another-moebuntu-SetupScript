@@ -34,33 +34,61 @@ sudo apt update >/dev/null 2>&1
 sudo apt -y install thunar thunar-archive-plugin file-roller zip unzip xz-utils zenity exo-utils
 
 # ---------------------------------------------------------
-# 2. Fix Thunar icon (Including Settings & Bulk Rename)
+# 2. Fix Thunar icon & Hide conflicting apps
 # ---------------------------------------------------------
-echo ">> Configuring local menu icon for Thunar..."
+echo ">> Configuring local menu icon for Thunar and hiding conflicting apps..."
 LOCAL_APP_DIR="$HOME/.local/share/applications"
 mkdir -p "$LOCAL_APP_DIR"
+
+# Remove target editor from association history (does not affect Tilix)
+if [ -f ~/.config/mimeapps.list ]; then
+    sed -i '/org\.gnome\.TextEditor/d' ~/.config/mimeapps.list
+    sed -i '/gnome-text-editor/d' ~/.config/mimeapps.list
+    sed -i '/snap\.gedit/d' ~/.config/mimeapps.list
+fi
+
+# Completely hide standard and Snap text editors that ignore themes from "Open With" menu
+BAD_EDITORS=(
+    "org.gnome.TextEditor.desktop"
+    "gnome-text-editor_gnome-text-editor.desktop"
+    "snap.gnome-text-editor.gnome-text-editor.desktop"
+    "snap.gedit.gedit.desktop"
+    "gnome-text-editor.desktop"
+)
+
+for bad_app in "${BAD_EDITORS[@]}"; do
+    echo -e "[Desktop Entry]\nHidden=true" > "$LOCAL_APP_DIR/$bad_app"
+done
 
 rm -f "$LOCAL_APP_DIR/kawaiintu-thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-settings.desktop"
 rm -f "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
 
-# Thunar関連のショートカットをまとめて処理
-for app in thunar thunar-settings thunar-bulk-rename; do
-    if [ -f "/usr/share/applications/${app}.desktop" ]; then
-        cp "/usr/share/applications/${app}.desktop" "$LOCAL_APP_DIR/"
-        sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/${app}.desktop"
-    fi
-done
-
-# メインThunarのWMClass追記
-if [ -f "$LOCAL_APP_DIR/thunar.desktop" ]; then
+# Main Thunar
+if [ -f /usr/share/applications/thunar.desktop ]; then
+    cp /usr/share/applications/thunar.desktop "$LOCAL_APP_DIR/"
+    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/thunar.desktop"
+    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar.desktop"
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/thunar.desktop"; then
         echo "StartupWMClass=Thunar" >> "$LOCAL_APP_DIR/thunar.desktop"
     fi
 fi
 
-# データベースの更新と、アイコンキャッシュの強制リフレッシュ
+# Thunar Settings
+if [ -f /usr/share/applications/thunar-settings.desktop ]; then
+    cp /usr/share/applications/thunar-settings.desktop "$LOCAL_APP_DIR/"
+    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/thunar-settings.desktop"
+    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-settings.desktop"
+fi
+
+# Bulk Rename
+if [ -f /usr/share/applications/thunar-bulk-rename.desktop ]; then
+    cp /usr/share/applications/thunar-bulk-rename.desktop "$LOCAL_APP_DIR/"
+    sed -i '/^Icon\[/d' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+    sed -i 's/^Icon=.*/Icon=system-file-manager/' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
+fi
+
 update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
 sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
 sudo gtk-update-icon-cache -f -t /usr/share/icons/gnome >/dev/null 2>&1 || true
@@ -124,6 +152,7 @@ else
     fi
 fi
 
+# Create exclusively for scripts, excluding text/plain from MimeType
 cat << 'EOF' > ~/.local/share/applications/tilix-run-script.desktop
 [Desktop Entry]
 Name=Tilix (Run Script)
@@ -131,9 +160,21 @@ Exec=tilix -e "%f"
 Icon=tilix
 Type=Application
 NoDisplay=false
-MimeType=application/x-shellscript;application/x-executable;text/plain;
+MimeType=application/x-shellscript;application/x-executable;
 EOF
+
 update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
+
+# Strip Gedit priority and force default action for shell scripts to "Execute"
+if [ -f ~/.config/mimeapps.list ]; then
+    sed -i '/application\/x-shellscript=/d' ~/.config/mimeapps.list
+    sed -i '/application\/x-executable=/d' ~/.config/mimeapps.list
+fi
+echo "application/x-shellscript=tilix-run-script.desktop" >> ~/.config/mimeapps.list
+echo "application/x-executable=tilix-run-script.desktop" >> ~/.config/mimeapps.list
+
+xdg-mime default tilix-run-script.desktop application/x-shellscript
+xdg-mime default tilix-run-script.desktop application/x-executable
 
 # ---------------------------------------------------------
 # 5. Inject custom actions & Cleanup
@@ -177,10 +218,10 @@ if ! grep -q "kawaiintu-run-tilix" "$UCA_FILE"; then
     cat << 'EOF' > /tmp/thunar-custom-actions.xml
 <action>
     <icon>tilix</icon>
-    <name>Tilixで実行 (Run in Tilix)</name>
+    <name>Run in Tilix</name>
     <unique-id>kawaiintu-run-tilix</unique-id>
     <command>tilix -e "%f"</command>
-    <description>シェルスクリプトをTilixで実行</description>
+    <description>Execute shell script in Tilix</description>
     <patterns>*.sh;*.bin;*.run;*Kawaset*</patterns>
     <directories/>
     <audio-files/>
@@ -230,7 +271,7 @@ xdg-mime default thunar.desktop inode/directory
 mkdir -p ~/Templates 2>/dev/null
 touch ~/Templates/"Text File.txt" 2>/dev/null
 
-echo ">> Thunar setup is fully completed."
+echo ">> Thunar setup is fully completed (with Custom Actions)."
 echo ""
 echo -n "Hit Any Key to return to menu: "
 read -r -n 1 -s answer

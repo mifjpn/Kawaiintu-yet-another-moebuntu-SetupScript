@@ -243,7 +243,7 @@ do
       # Check if dependencies (Nemo/Thunar) exist before removing Gedit
       if command -v nemo >/dev/null 2>&1 || command -v thunar >/dev/null 2>&1; then
           echo -e "\n${COL_RED}[!] Error: Cannot remove Gedit right now.${COL_RESET}"
-          echo -e "${COL_YELLOW}Nemo or Thunar is currently installed and depends on Gedit as the default text editor.${COL_RESET}"
+          echo -e "${COL_YELLOW}Nemo or Thunar is currently installed and depends on Gedit for text editing.${COL_RESET}"
           echo -e "${COL_YELLOW}Please remove them explicitly from the menu first before removing Gedit.${COL_RESET}\n"
           echo -n "Hit Any Key to return to menu: "
           read -r -n 1 -s answer

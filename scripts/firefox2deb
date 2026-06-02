@@ -10,7 +10,7 @@ if snap list | grep -q firefox; then
   echo ">> Removing snap version of Firefox..."
   echo "   (Note: If this takes too long, abort (Ctrl+C), run 'sudo snap refresh', and try again)"
   sudo snap remove --purge firefox
-  # CD-ROMなどのシステムパッケージ巻き込み削除を防止するため --autoremove を除外
+  # Exclude --autoremove to prevent removing system packages like CD-ROM drivers
   sudo apt remove -y firefox >/dev/null 2>&1
 else
   echo ">> Snap version of Firefox is not installed."
@@ -47,18 +47,18 @@ mkdir -p "$LOCAL_APP_DIR"
 if [ -f /usr/share/applications/firefox.desktop ]; then
     cp /usr/share/applications/firefox.desktop "$LOCAL_APP_DIR/"
     
-    # アイコン指定が絶対パスでハードコードされている場合も考慮し、強制的に "firefox" に書き換え
-    sed -i 's/^Icon=.*/Icon=firefox/' "$LOCAL_APP_DIR/firefox.desktop"
+    # Rewrite to the correct icon name "firefox_mk2"
+    sed -i 's/^Icon=.*/Icon=firefox_mk2/' "$LOCAL_APP_DIR/firefox.desktop"
     
-    # 起動時のWMClassを明記して、Dockが確実にこのショートカットと実行画面を紐付けるようにする
+    # Specify WMClass on startup to ensure Dock links this shortcut
     if ! grep -q "^StartupWMClass=" "$LOCAL_APP_DIR/firefox.desktop"; then
         echo "StartupWMClass=Firefox" >> "$LOCAL_APP_DIR/firefox.desktop"
     fi
     
-    # GNOME Shellにこのローカルファイルを「安全」と認識させるための実行権限付与
+    # Grant execution permission so GNOME Shell recognizes this local file as safe
     chmod +x "$LOCAL_APP_DIR/firefox.desktop"
     
-    # データベースの更新と、GNOMEのアイコンキャッシュの強制リフレッシュ
+    # Update database and force refresh GNOME icon cache
     update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
     sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
     sudo gtk-update-icon-cache -f -t /usr/share/icons/gnome >/dev/null 2>&1 || true
@@ -71,7 +71,7 @@ echo ">> Configuring Firefox UI to use system titlebar..."
 REAL_USER=${SUDO_USER:-$USER}
 USER_HOME=$(eval echo ~$REAL_USER)
 
-# 既に起動してプロファイルがある場合への適用
+# Apply to existing profiles
 for profile in "$USER_HOME/.mozilla/firefox/"*.default* \
                "$USER_HOME/snap/firefox/common/.mozilla/firefox/"*.default* \
                "$USER_HOME/.config/mozilla/firefox/"*.default*; do
@@ -81,7 +81,7 @@ for profile in "$USER_HOME/.mozilla/firefox/"*.default* \
             sed -i '/extensions.activeThemeID/d' "$profile/user.js"
         fi
         
-        # タイトルバーを表示し、テーマをシステムデフォルトに追従させる
+        # Show title bar and follow system default theme
         echo 'user_pref("browser.tabs.inTitlebar", 0);' >> "$profile/user.js"
         echo 'user_pref("extensions.activeThemeID", "default-theme@mozilla.org");' >> "$profile/user.js"
         
@@ -89,8 +89,8 @@ for profile in "$USER_HOME/.mozilla/firefox/"*.default* \
     fi
 done
 
-# まだ一度も起動していない（プロファイル未作成）環境でも確実に効かせるため、
-# システム全体のデフォルト設定ファイル(syspref.js)にも追記しておく
+# Append to system-wide default settings (syspref.js) to ensure it works
+# even on fresh environments without profiles
 if [ -d "/etc/firefox" ]; then
     sudo bash -c 'echo "pref(\"browser.tabs.inTitlebar\", 0);" >> /etc/firefox/syspref.js'
     sudo bash -c 'echo "pref(\"extensions.activeThemeID\", \"default-theme@mozilla.org\");" >> /etc/firefox/syspref.js'
@@ -107,10 +107,10 @@ NEW_FAVORITES=$(python3 << 'EOF'
 import os, re
 raw = os.environ.get('FAVORITES', '')
 favs = re.findall(r"'([^']+)'", raw)
-# 既存のFirefox関連を一度すべて削除
+# Remove all existing Firefox related items
 excludes = ['firefox.desktop', 'firefox_firefox.desktop']
 favs = [x for x in favs if x not in excludes]
-# 一番左（先頭）に確実に追加
+# Ensure it is added to the far left (first position)
 favs.insert(0, 'firefox.desktop')
 print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
 EOF

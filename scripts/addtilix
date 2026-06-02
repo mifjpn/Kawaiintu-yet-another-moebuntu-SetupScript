@@ -32,7 +32,7 @@ sudo update-alternatives --set x-terminal-emulator /usr/local/bin/tilix-wrapper 
 # ---------------------------------------------------------
 echo ">> Configuring Tilix to use GTK UI with Black Background..."
 
-# 1. 現在のデフォルトプロファイルのIDを取得
+# 1. Get current default profile ID
 PROFILE_ID=$(gsettings get com.gexperts.Tilix.ProfilesList default 2>/dev/null | tr -d \')
 
 if [ -z "$PROFILE_ID" ] || [ "$PROFILE_ID" == "null" ]; then
@@ -40,10 +40,10 @@ if [ -z "$PROFILE_ID" ] || [ "$PROFILE_ID" == "null" ]; then
     gsettings set com.gexperts.Tilix.ProfilesList default "'$PROFILE_ID'" 2>/dev/null || true
 fi
 
-# 2. UI全体はシステムのGTKテーマに追従させる
+# 2. Follow system GTK theme for overall UI
 gsettings set com.gexperts.Tilix.Settings theme-variant 'system' 2>/dev/null || true
 
-# 3. ターミナル内のテキストエリアのみ、テーマ同期を切って黒背景・白文字に強制
+# 3. Disable theme sync for terminal text area, force black background and white text
 dconf write /com/gexperts/Tilix/profiles/${PROFILE_ID}/use-theme-colors false 2>/dev/null || true
 dconf write /com/gexperts/Tilix/profiles/${PROFILE_ID}/background-color "'#000000'" 2>/dev/null || true
 dconf write /com/gexperts/Tilix/profiles/${PROFILE_ID}/foreground-color "'#FFFFFF'" 2>/dev/null || true

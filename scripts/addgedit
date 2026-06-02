@@ -5,16 +5,43 @@ echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 echo -e "\x1b[36;01m             Installing Gedit            \x1b[39;49;00m"
 echo -e "\x1b[36;01m=========================================\x1b[39;49;00m"
 
-# 1. Install packages
+# 1. Remove Snap versions to prevent right-click menu conflicts
+echo ">> Removing Snap text editors..."
+if snap list | grep -q gnome-text-editor; then
+    sudo snap remove --purge gnome-text-editor >/dev/null 2>&1 || true
+fi
+if snap list | grep -q gedit; then
+    sudo snap remove --purge gedit >/dev/null 2>&1 || true
+fi
+
+# 2. Install packages
 echo ">> Updating apt and installing gedit..."
 sudo apt update >/dev/null 2>&1
 sudo apt -y install gedit
 
-# 2. Set as default editor
+# 3. Set as default editor
 echo ">> Setting Gedit as the default text editor..."
 
-# GUI (Default when double-clicking in file manager)
+# GUI (Default when double-clicking in file manager and right-click menu)
 xdg-mime default org.gnome.gedit.desktop text/plain
+xdg-mime default org.gnome.gedit.desktop application/x-shellscript
+xdg-mime default org.gnome.gedit.desktop application/x-desktop
+
+# Force Gedit to highest priority in user settings while keeping system gnome-text-editor (apt version)
+mkdir -p ~/.config
+if ! grep -q "text/plain=org.gnome.gedit.desktop" ~/.config/mimeapps.list 2>/dev/null; then
+    # Append considering cases where the file or [Default Applications] section is missing
+    if ! grep -q "\[Default Applications\]" ~/.config/mimeapps.list 2>/dev/null; then
+        echo "[Default Applications]" >> ~/.config/mimeapps.list
+    fi
+    echo "text/plain=org.gnome.gedit.desktop" >> ~/.config/mimeapps.list
+    echo "application/x-shellscript=org.gnome.gedit.desktop" >> ~/.config/mimeapps.list
+    echo "application/x-desktop=org.gnome.gedit.desktop" >> ~/.config/mimeapps.list
+fi
+
+# Force refresh the desktop database to apply right-click menu instantly
+update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
+sudo update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
 
 # CLI (Default editor called by system in terminal, etc.)
 # Safety measure to not stop even if an error occurs
