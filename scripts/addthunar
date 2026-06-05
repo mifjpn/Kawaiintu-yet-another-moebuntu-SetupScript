@@ -57,15 +57,15 @@ if [ -f /usr/share/applications/thunar.desktop ]; then
     chmod +x "$LOCAL_APP_DIR/thunar.desktop"
 fi
 
-# Thunar Settings
+# Thunar Settings - ギヤアイコン (Gear Icon)
 if [ -f /usr/share/applications/thunar-settings.desktop ]; then
     cp /usr/share/applications/thunar-settings.desktop "$LOCAL_APP_DIR/"
-    sed -i 's/^Icon=.*/Icon=preferences-system/' "$LOCAL_APP_DIR/thunar-settings.desktop"
+    sed -i 's/^Icon=.*/Icon=org.gnome.Settings/' "$LOCAL_APP_DIR/thunar-settings.desktop"
     sed -i '/^Name\[/d' "$LOCAL_APP_DIR/thunar-settings.desktop"
     chmod +x "$LOCAL_APP_DIR/thunar-settings.desktop"
 fi
 
-# Thunar Bulk Rename
+# Thunar Bulk Rename - Editアイコン (Full color Editor/Pencil)
 if [ -f /usr/share/applications/thunar-bulk-rename.desktop ]; then
     cp /usr/share/applications/thunar-bulk-rename.desktop "$LOCAL_APP_DIR/"
     sed -i 's/^Icon=.*/Icon=accessories-text-editor/' "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
@@ -73,6 +73,8 @@ if [ -f /usr/share/applications/thunar-bulk-rename.desktop ]; then
     chmod +x "$LOCAL_APP_DIR/thunar-bulk-rename.desktop"
 fi
 
+# Force GNOME App grid to refresh immediately
+touch "$LOCAL_APP_DIR"
 update-desktop-database "$LOCAL_APP_DIR" >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------
@@ -244,7 +246,7 @@ xdg-mime default thunar.desktop inode/directory
 rm -f ~/.local/share/applications/mimeinfo.cache
 update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
 
-# Correctly mask Snap Text Editor so it doesn't show as "名前なし" (Unnamed)
+# Correctly mask Snap Text Editor
 mkdir -p ~/.local/share/applications
 cat << 'EOF' > ~/.local/share/applications/gnome-text-editor_gnome-text-editor.desktop
 [Desktop Entry]
@@ -289,7 +291,8 @@ fi
 
 # --- 1. Set Gedit as default ONLY for plain text files ---
 for mime_type in text/plain; do
-    sed -i "|^${mime_type}=.*|d" "$MIME_FILE"
+    MIME_ESC="${mime_type//\//\\/}"
+    sed -i "/^${MIME_ESC}=.*/d" "$MIME_FILE"
     sed -i "/^\[Default Applications\]/a ${mime_type}=org.gnome.gedit.desktop;" "$MIME_FILE"
     xdg-mime default org.gnome.gedit.desktop "$mime_type" 2>/dev/null || true
     gio mime "$mime_type" org.gnome.gedit.desktop >/dev/null 2>&1 || true
@@ -297,8 +300,9 @@ done
 
 # --- 2. Force Scripts to RUN on Double-Click, and add Gedit to Right-Click ---
 for mime_type in application/x-shellscript application/x-executable; do
+    MIME_ESC="${mime_type//\//\\/}"
     # Completely remove any existing defaults for scripts (preventing fallback to Gedit)
-    sed -i "|^${mime_type}=.*|d" "$MIME_FILE"
+    sed -i "/^${MIME_ESC}=.*/d" "$MIME_FILE"
     
     # Set the absolute default for scripts to our Run wrapper
     sed -i "/^\[Default Applications\]/a ${mime_type}=tilix-run-script.desktop;" "$MIME_FILE"

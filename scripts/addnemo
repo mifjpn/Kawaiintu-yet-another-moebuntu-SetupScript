@@ -40,27 +40,21 @@ echo ">> Replacing Nautilus and setting Nemo strictly below Firefox..."
 FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
 export FAVORITES
 
-# Use a Python heredoc with regex to completely avoid string parsing errors
 NEW_FAVORITES=$(python3 << 'EOF'
 import os, re
-
 raw = os.environ.get('FAVORITES', '')
 favs = re.findall(r"'([^']+)'", raw)
-
 excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop']
 favs = [x for x in favs if x not in excludes]
-
 ff_idx = -1
 for i, app in enumerate(favs):
     if app in ['firefox.desktop', 'firefox_firefox.desktop']:
         ff_idx = i
         break
-
 if ff_idx != -1:
     favs.insert(ff_idx + 1, 'nemo.desktop')
 else:
     favs.insert(1, 'nemo.desktop')
-
 print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
 EOF
 )
@@ -69,7 +63,7 @@ gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
 echo ">> Done. Nemo is now placed correctly in favorites."
 
 # ---------------------------------------------------------
-# 3. Fix Nemo Terminal Execution (Cinnamon Native Integration)
+# 3. Fix Nemo Terminal Settings & Double-Click Popup
 # ---------------------------------------------------------
 echo ">> Configuring native terminal settings for Nemo (Cinnamon base)..."
 if [ -f /usr/local/bin/tilix-wrapper ]; then
@@ -81,17 +75,78 @@ fi
 gsettings set org.cinnamon.desktop.default-applications.terminal exec "$NEMO_TERM" 2>/dev/null || true
 gsettings set org.cinnamon.desktop.default-applications.terminal exec-arg "-e" 2>/dev/null || true
 
+# Force Nemo to ask for action when double-clicking executable text files
+gsettings set org.nemo.preferences executable-text-activation 'ask' 2>/dev/null || true
+
 # ---------------------------------------------------------
-# 4. Set as default file manager & Create dummy templates
+# 4. Set as default file manager & Text Editor Configurations
 # ---------------------------------------------------------
+echo ">> Setting defaults (Nemo & Gedit)..."
 xdg-mime default nemo.desktop inode/directory
 
-# Create templates for both English and Japanese environments
-mkdir -p ~/Templates 2>/dev/null
-touch ~/Templates/"Text File.txt" 2>/dev/null
+# Clear MIME cache to force system to re-read desktop files
+rm -f ~/.local/share/applications/mimeinfo.cache
 
-mkdir -p ~/テンプレート 2>/dev/null
-touch ~/テンプレート/"Text File.txt" 2>/dev/null
+# Aggressively mask ALL possible names for Snap/Native Text Editor
+mkdir -p ~/.local/share/applications
+for app_name in gnome-text-editor_gnome-text-editor org.gnome.TextEditor gnome-text-editor; do
+    cat << EOF > ~/.local/share/applications/${app_name}.desktop
+[Desktop Entry]
+Name=GNOME Text Editor
+Type=Application
+Hidden=true
+NoDisplay=true
+EOF
+done
+
+# Force common apps to appear in English in the context menu
+for app in org.gnome.gedit tilix file-roller org.gnome.FileRoller; do
+    if [ -f "/usr/share/applications/${app}.desktop" ]; then
+        cp "/usr/share/applications/${app}.desktop" ~/.local/share/applications/
+        sed -i '/^Name\[/d' ~/.local/share/applications/${app}.desktop
+        sed -i '/^GenericName\[/d' ~/.local/share/applications/${app}.desktop
+        chmod +x ~/.local/share/applications/${app}.desktop
+    fi
+done
+
+# Ensure Gedit is specifically named just "Gedit"
+sed -i 's/^Name=.*/Name=Gedit/' ~/.local/share/applications/org.gnome.gedit.desktop 2>/dev/null || true
+update-desktop-database ~/.local/share/applications >/dev/null 2>&1 || true
+
+# Aggressively enforce defaults via mimeapps.list
+MIME_FILE="$HOME/.config/mimeapps.list"
+mkdir -p "$HOME/.config"
+touch "$MIME_FILE"
+if ! grep -q "^\[Default Applications\]" "$MIME_FILE"; then
+    echo "[Default Applications]" >> "$MIME_FILE"
+fi
+if ! grep -q "^\[Added Associations\]" "$MIME_FILE"; then
+    echo "" >> "$MIME_FILE"
+    echo "[Added Associations]" >> "$MIME_FILE"
+fi
+
+# --- 1. Set Gedit as default ONLY for plain text files ---
+for mime_type in text/plain; do
+    MIME_ESC="${mime_type//\//\\/}"
+    sed -i "/^${MIME_ESC}=.*/d" "$MIME_FILE"
+    sed -i "/^\[Default Applications\]/a ${mime_type}=org.gnome.gedit.desktop;" "$MIME_FILE"
+    xdg-mime default org.gnome.gedit.desktop "$mime_type" 2>/dev/null || true
+    gio mime "$mime_type" org.gnome.gedit.desktop >/dev/null 2>&1 || true
+done
+
+# --- 2. Remove default overrides for Scripts to let Nemo's popup work natively ---
+for mime_type in application/x-shellscript application/x-executable; do
+    MIME_ESC="${mime_type//\//\\/}"
+    
+    # Remove any existing defaults for scripts to ensure Nemo asks what to do
+    sed -i "/^${MIME_ESC}=.*/d" "$MIME_FILE"
+    
+    # Add Gedit to the right-click "Open With" menu as an option
+    sed -i "/^\[Added Associations\]/a ${mime_type}=org.gnome.gedit.desktop;" "$MIME_FILE"
+done
+
+# Force Nemo to restart so it reads the new MIME and Desktop settings immediately
+killall nemo 2>/dev/null || true
 
 echo ">> Nemo setup is fully completed."
 echo ""
