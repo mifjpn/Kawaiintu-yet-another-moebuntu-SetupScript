@@ -34,36 +34,7 @@ sudo apt update >/dev/null 2>&1
 sudo apt -y install nemo
 
 # ---------------------------------------------------------
-# 2. Add to Dock (Favorites) - Bulletproof Regex Injection
-# ---------------------------------------------------------
-echo ">> Replacing Nautilus and setting Nemo strictly below Firefox..."
-FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
-export FAVORITES
-
-NEW_FAVORITES=$(python3 << 'EOF'
-import os, re
-raw = os.environ.get('FAVORITES', '')
-favs = re.findall(r"'([^']+)'", raw)
-excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop']
-favs = [x for x in favs if x not in excludes]
-ff_idx = -1
-for i, app in enumerate(favs):
-    if app in ['firefox.desktop', 'firefox_firefox.desktop']:
-        ff_idx = i
-        break
-if ff_idx != -1:
-    favs.insert(ff_idx + 1, 'nemo.desktop')
-else:
-    favs.insert(1, 'nemo.desktop')
-print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
-EOF
-)
-
-gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
-echo ">> Done. Nemo is now placed correctly in favorites."
-
-# ---------------------------------------------------------
-# 3. Fix Nemo Terminal Settings & Double-Click Popup
+# 2. Fix Nemo Terminal Settings & Double-Click Popup
 # ---------------------------------------------------------
 echo ">> Configuring native terminal settings for Nemo (Cinnamon base)..."
 if [ -f /usr/local/bin/tilix-wrapper ]; then
@@ -79,7 +50,7 @@ gsettings set org.cinnamon.desktop.default-applications.terminal exec-arg "-e" 2
 gsettings set org.nemo.preferences executable-text-activation 'ask' 2>/dev/null || true
 
 # ---------------------------------------------------------
-# 4. Set as default file manager & Text Editor Configurations
+# 3. Set as default file manager & Text Editor Configurations
 # ---------------------------------------------------------
 echo ">> Setting defaults (Nemo & Gedit)..."
 xdg-mime default nemo.desktop inode/directory
@@ -147,6 +118,52 @@ done
 
 # Force Nemo to restart so it reads the new MIME and Desktop settings immediately
 killall nemo 2>/dev/null || true
+
+# ---------------------------------------------------------
+# 4. Add to Dock (Favorites) - Final Enforcement (Nemo Version)
+# ---------------------------------------------------------
+echo ">> Re-arranging Dock (Favorites) to enforce Firefox -> File Managers -> Tilix..."
+FAVORITES=$(gsettings get org.gnome.shell favorite-apps)
+export FAVORITES
+
+NEW_FAVORITES=$(python3 << 'EOF'
+import os, re
+raw = os.environ.get('FAVORITES', '')
+favs = re.findall(r"'([^']+)'", raw)
+
+# ThunarがすでにDockにいるか記憶しておく
+has_thunar = any('thunar' in x.lower() for x in favs)
+
+# 干渉しそうなものをすべて一旦除外
+excludes = ['org.gnome.Nautilus.desktop', 'nemo.desktop', 'kawaiintu-nemo.desktop', 'thunar.desktop', 'kawaiintu-thunar.desktop', 'com.gexperts.Tilix.desktop', 'tilix.desktop']
+favs = [x for x in favs if x not in excludes]
+
+ff_idx = -1
+for i, app in enumerate(favs):
+    if 'firefox' in app.lower():
+        ff_idx = i
+        break
+
+idx = ff_idx + 1 if ff_idx != -1 else 1
+
+# 1. Nemoを挿入
+favs.insert(idx, 'nemo.desktop')
+idx += 1
+
+# 2. Thunarが元々いたら、Nemoの隣に並べる
+if has_thunar:
+    favs.insert(idx, 'thunar.desktop')
+    idx += 1
+
+# 3. 最後にTilixでフタをする
+favs.insert(idx, 'com.gexperts.Tilix.desktop')
+
+print('[' + ', '.join([f"'{x}'" for x in favs]) + ']')
+EOF
+)
+
+gsettings set org.gnome.shell favorite-apps "$NEW_FAVORITES"
+echo ">> Done. Nemo and Tilix are now permanently secured in the dock."
 
 echo ">> Nemo setup is fully completed."
 echo ""

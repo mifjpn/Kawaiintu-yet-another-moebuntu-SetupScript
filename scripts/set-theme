@@ -60,6 +60,18 @@ else
   exit 1
 fi
 
+# ---------------------------------------------------------
+# 3.5. Hide Ubuntu Logo on Login Screen
+# ---------------------------------------------------------
+echo ">> Hiding Ubuntu logo on login screen..."
+sudo mkdir -p /etc/dconf/db/gdm.d
+cat << 'EOF' | sudo tee /etc/dconf/db/gdm.d/99-kawaiintu-hide-logo >/dev/null
+[org/gnome/login-screen]
+logo=''
+fallback-logo=''
+EOF
+sudo dconf update
+
 # 4. Change GDM (Login) background image
 echo ""
 echo ">> The theme's default kawaii background has been applied."
