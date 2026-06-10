@@ -1,0 +1,127 @@
+# Kawaiintu (Post-Moebuntu) Setup Helper - Release Note
+
+## 🎬 Video Introduction / ビデオ紹介
+
+Watch how beautiful Kawaiintu transforms your Ubuntu desktop!
+Kawaiintuがあなたのデスクトップをどのように美しく変えるかをご覧ください！
+
+🎥 **[Kawaiintu Demo & Design Showcase](https://www.youtube.com/watch?v=FO4BmporPio)**
+
+---
+
+Welcome to the new era of Ubuntu customization!
+UbuntuカスタマイズのNew Eraの幕開けです！
+
+We are excited to announce the first release of **Kawaiintu (Post-Moebuntu) Setup Helper**. It keeps all the fun of the classic Moebuntu, but we've completely rebuilt the inside so it's safer, smoother, and easier to use than ever before!
+
+従来のMoebuntuの楽しさや親しみやすさはそのままに、中身をゼロから作り直した正統後継者『Kawaiintu Setup Helper』の初リリースをお届けします。パソコンに詳しくない方でも、もっと簡単に、もっと安全に自分だけの可愛いデスクトップを作れるようになりました！
+
+---
+
+## ✨ What's New? / ここが新しくなりました！
+
+### 🎓 A Refined & Modern Aesthetic / 「ロリ甘」からちょっと卒業しました
+
+We've evolved from the overly sweet style to a more refined and modern cuteness. The visual design now perfectly balances sophistication with charm—ideal for both personal expression and professional environments.
+従来の甘すぎるデザインから少しだけ大人にステップアップ。普段使いしやすく、より洗練された「スッキリとした可愛さ」のベストバランスに進化しました！
+
+**Design Philosophy**: Clean lines, harmonious color palettes, and elegant typography create an environment that's both beautiful and functional.
+**デザン哲学**: シンプルなラインと調和のとれた色使い、洗練されたタイポグラフィが、美しさと実用性を両立させた環境を実現します。
+
+---
+
+### 🌈 9 Beautiful Colors! / 当然9色に展開！手作業や危険なコードはもうありません
+
+We've fully automated the color generation using Python! Say goodbye to manual work and dangerous hard-coded configurations. You can now enjoy 9 beautiful color variations safely and effortlessly.
+
+Each color theme has been carefully crafted by design professionals to ensure visual harmony across the entire system. Whether you prefer warm, cool, or neutral tones, there's a perfect palette waiting for you.
+
+カラー展開もPythonの力でスマートに自動化！これまでのようにイラストレーターで1つずつ手作業したり、システムを脅かすような危険なコード（直書き）に頼る必要は一切ありません。安全な仕組みで、色鮮やかで調和のとれた9色のバリエーションを切り替えてお楽しみいただけます。
+
+**色仲間たち** / **Color Family**:
+- Sakura Pink (桜ピンク)
+- Lavender Dream (ラベンダー)
+- Ocean Blue (海ブルー)
+- Forest Green (森グリーン)
+- Sunset Orange (夕焼けオレンジ)
+- Moonlight Purple (月光パープル)
+- Rose Gold (ローズゴールド)
+- Mint Fresh (ミントフレッシュ)
+- Cosmic Plum (コズミックプラム)
+
+---
+
+### 🖼️ Seamless Visual Integration / ファイルたちも可愛い「色仲間」に
+
+We fixed the messy mix of line-art and colorful icons. Now, all your folders and files in the file manager look perfectly coordinated and adorable!
+
+**Beautiful & Unified Icons**: All interface elements—from file manager icons to system indicators—have been redesigned to maintain visual consistency and aesthetic harmony throughout your desktop experience.
+
+ファイルマネージャーの中が、統一感のある可愛い「色仲間」たちで彩られます！デスクトップ全体が一つの美しい世界観でまとまります。
+
+---
+
+### 🎨 Seamless Theme Support for Apps / アプリのテーマ反映もバッチリ
+
+By configuring the theme environment to align with the system, themes for apps installed via `apt` (like GIMP) are now properly reflected. Your favorite applications will seamlessly blend with Kawaiintu's beautiful aesthetic.
+
+最近の `apt` でインストールしたアプリ（GIMPなど）は、システムに準じたテーマ環境に設定することで、きちんとアプリのテーマも反映されるようになりました。アプリを立ち上げても、統一された可愛い世界観がしっかり保たれます！
+
+---
+
+### 🖼️ Magic Login Screen / ログイン画面のお着替えが超簡単に
+
+No more tricky setups! Just drag and drop your favorite picture, and Kawaiintu will automatically set it as your login screen background with beautiful styling.
+
+The login screen is your first impression—we've made it a masterpiece! Customize it with your favorite images while maintaining Kawaiintu's elegant visual language.
+
+難しい設定ファイルとにらめっこする必要はなくなりました。好きな画像をポンッと指定するだけで、裏側でKawaiintuが賢く働いて、ログイン画面をあなたの「推し」に早変わりさせます！
+
+---
+
+### 🛡️ Clean & Safe by Design / 見えないところもピカピカ！安心・安全設計
+
+We cleaned up all the complicated code under the hood. You can now customize your desktop without worrying about breaking your system files!
+
+The beautiful exterior is supported by a robust, carefully audited codebase. System integrity is our top priority—customize with confidence.
+
+「カスタマイズしたらパソコンがおかしくなっちゃうかも…」という心配はもう要りません。裏側のプログラムを徹底的に��掃除し、システムを絶対に壊さない安全第一の設計に生まれ変わりました。
+
+---
+
+### 🚀 Ready for Ubuntu 26.04 LTS / 最新のUbuntu環境にバッチリ対応
+
+Fully optimized for the modern GNOME desktop on Ubuntu 26.04 LTS. Experience cutting-edge design on the latest, most stable Ubuntu release.
+
+最新の Ubuntu 26.04 LTS の仕様に合わせて丁寧に作られています。最新のデスクトップ環境でもバッチリ可愛く動作します。
+
+---
+
+## 📝 Perfect for Design Enthusiasts & Power Users / デザイナー・パワーユーザーにも
+
+Whether you're a designer seeking a beautiful, cohesive visual environment or a power user who appreciates thoughtfully crafted interfaces, Kawaiintu delivers on both fronts. The meticulous attention to detail, from icon design to color theory, makes this more than just a theme—it's a complete aesthetic experience.
+
+デザインの美しさを求める方、こだわりのあるユーザーの皆様にも満足いただけるよう、細部にわたって丁寧に作り込まれています。
+
+---
+
+## 📦 How to Install / インストール方法
+
+1. Download `scripts.tar.xz` from the assets below. (下のアセットから `scripts.tar.xz` をダウンロードします)
+2. Extract the file. (ファイルを右クリックして解凍します)
+3. Right-click `Kawaset` and select **"Run as a Program"**. (`Kawaset` を右クリックして **「プログラムとして実行」** を選ぶだけでメニューが開きます！)
+
+---
+
+## 🎥 Learn More / もっと詳しく
+
+**[Watch the Design Showcase Video](https://www.youtube.com/watch?v=FO4BmporPio)** to see Kawaiintu's beautiful interface in action!
+
+**[デザイン紹介動画を見る](https://www.youtube.com/watch?v=FO4BmporPio)** - Kawaiintuの美しいインターフェースが実際に動いている様子をご覧ください！
+
+---
+
+Enjoy the clean, safe, and beautiful Kawaiintu environment!
+新しく生まれ変わった、安全でスマートなKawaiintuの世界をぜひお楽しみください！
+
+**For Ubuntu 26.04 LTS Users** | **Ubuntu 26.04 LTSユーザーの皆様へ**
