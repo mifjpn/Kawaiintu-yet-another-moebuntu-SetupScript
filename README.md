@@ -186,3 +186,180 @@ Moebuntu が作ってくれた「可愛い Ubuntu」という世界観を、さ�
 ---
 
 **新しく生まれ変わった、安全でスマートな Kawaiintu の世界をぜひお楽しみください！** 🌈✨
+
+以下に、GitHub等のREADMEに適した自然な英語訳を作成しました。OSS（オープンソースソフトウェア）のカルチャーに合わせた、親しみやすくかつ技術的に正確な表現にしています。
+🌈 Kawaiintu (Post-Moebuntu) Setup Helper
+
+    The legitimate successor to Moebuntu. A safe, smart, and above all, KAWAII Ubuntu customization tool.
+
+🎬 Watch it in Action!
+✨ Color Theme Switching Demo
+
+Watch on YouTube Shorts →
+🎨 9 Beautiful Color Themes
+
+Kawaiintu features 9 sophisticated color variations.
+Switch to a perfectly unified kawaii world with just one click.
+✨ What's New in Kawaiintu!
+🎓 Evolved "Sophisticated Kawaii"
+
+Transitioning from the overly sweet design of traditional Moebuntu to a more refined, "clean and cute" aesthetic. Modern elegance that is easy to use for daily tasks.
+🔧 Fully Automated (Python-driven)
+
+    Everything from color generation to setup is automated.
+
+    No manual work in Illustrator required.
+
+    Dangerous hardcoded settings are completely eliminated.
+
+    Safe, Easy, and Reliable.
+
+🛡️ Safe and Secure Design
+
+Designed to absolutely never break system files. No more worrying about "messing up your PC" when customizing.
+📁 Unified, Beautiful Icons
+
+Eliminated the mixture of line art and color icons in the file manager. Everything is now harmonized with matching color schemes.
+🎨 Fully Applied Application Themes
+
+Automatically applies the system theme to modern applications like GIMP. The kawaii aesthetic is maintained even when you open apps.
+🖼️ Super Easy Login Screen Customization
+
+No complicated configuration files needed. Just drag & drop your favorite image, and Kawaiintu will automatically apply it to the login screen.
+🚀 Fully Compatible with Ubuntu 26.04 LTS
+
+Optimized for the latest GNOME desktop environment. All the latest features are fully supported.
+🚀 Quick Start
+Requirements
+
+    Ubuntu 26.04 LTS (Optimized for this version)
+
+Installation Guide
+1️⃣ Download
+
+From your browser, go to the Release page and download scripts.tar.xz.
+2️⃣ Extract
+
+Double-click scripts.tar.xz or use the archive manager to extract it.
+3️⃣ Run
+
+Open the extracted scripts folder, right-click Kawaset → select "Run as a Program"!
+
+🎉 The Kawaiintu Setup Helper menu will open.
+📖 How to Use (Details)
+⚠️ MUST READ: Always start with "base setting (Do first!)"
+
+When the menu opens, please execute "base setting (Do first!)" first.
+
+This step will open gnome-shell-extension-manager:
+
+    Search for "User Themes" in the "Browse" tab.
+
+    Click "Add" to install.
+
+    Move to the "Installed" tab and toggle "User Themes" to ON.
+
+    Close the window.
+
+✅ After this setup, themes will be applied correctly.
+🎨 Apply Themes
+Color Theme
+
+Just choose your favorite color from the menu. Window themes and Shell themes will be applied automatically.
+🖼️ Login Screen (GDM) Customization
+
+You can also customize the login screen while applying a theme:
+
+    Enter Y to change the login screen.
+
+    Drag & drop your favorite image file → Automatically converted and applied.
+
+    Alternatively, select Kawaiintu's default kawaii illustration or a simple black background.
+
+🎨 Icons
+
+Easily apply or remove Kawaii icon packs.
+🥾 Plymouth (Boot Screen)
+
+Set up a kawaii spinner screen for OS boot. Custom images can also be used.
+🖥️ Wallpaper
+
+Freely customize your desktop background. Supports drag & drop. Automatically applied to both Light and Dark modes.
+🔌 Application Settings
+Firefox
+
+    Switch between Snap and Deb versions (Deb version is recommended).
+
+File Manager
+
+    Install, configure, or remove Nemo / Thunar.
+
+    Includes custom action presets, such as "Open in Terminal".
+
+Media Player
+
+    Easily remove unnecessary apps like VLC.
+
+🔊 Sound
+
+Choose from multiple Kawaii sound themes:
+
+    Amateur Voice Actor version
+
+    Maid version
+
+    Sci-Fi version
+
+    Hatsune Miku version
+
+    etc.
+
+Easy removal of custom sounds.
+🔄 Revert to Default
+
+Select "remove Kawaiintu/Moe-theme" to safely remove all customizations and revert to the default Ubuntu (Yaru) theme.
+⚠️ Known Issues
+User Themes Extension in VirtualBox Environments
+
+In very rare cases, the User Themes extension may not become active immediately.
+Solution: Apply it manually from GNOME Tweaks or restart the system.
+Issues After Ubuntu Upgrades
+
+If you upgraded Ubuntu without doing a clean install, the initial setup might fail.
+
+Solution:
+Bash
+
+sudo apt remove gnome-shell-extension-manager
+sudo apt install gnome-shell-extension-manager
+
+After doing this, please run the base setup again.
+📝 License & Developer Info
+
+This setup helper is released under the MIT License.
+
+Feel free to fork, modify, and translate it! Please go ahead and create a version in your local language.
+Credits
+
+    Core Themes, Plymouth, Icons: Toy (Original Creator of Moebuntu)
+
+    Kawaiintu Transformation, Automation System, Python Compilation: Mifjpn
+
+Important Request
+
+When forking, please do not include theme files directly in the repository. Set them up to be dynamically downloaded from GitHub.
+🌍 Community
+
+    GitHub Issues: Bug reports & feature requests
+
+    GitHub Discussions: General chat, usage examples, customization sharing
+
+    YouTube Shorts: Check out demo videos for operational flow
+
+💝 Respect for Moebuntu
+
+Kawaiintu is the legitimate successor that brings the nostalgic Moebuntu into the latest Ubuntu environment (26.04 LTS) with love and respect.
+
+We have evolved the "Kawaii Ubuntu" worldview created by Moebuntu into something safer, smarter, and easier for everyone to use.
+
+Please enjoy the newly reborn, safe, and smart world of Kawaiintu! 🌈✨
