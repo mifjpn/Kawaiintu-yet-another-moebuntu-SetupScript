@@ -6,7 +6,6 @@
 
 > The legitimate successor to Moebuntu. A safe, smart, and above all, **KAWAII** Ubuntu customization tool.
 
-**English** | [日本語](#-kawaiintu-post-moebuntu-setup-helper)
 
 ---
 
